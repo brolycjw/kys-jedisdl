@@ -230,6 +230,10 @@ var
 
   CENTER_X: integer = 320;
   CENTER_Y: integer = 220;
+  HORIZONTAL_SPACING: integer = 3;
+  VERTICAL_SPACING: integer = 3;
+  FONT_WIDTH: integer = 23;
+  FONT_HEIGHT: integer = 23;
 
   AppPath: string; //程序的路径
 

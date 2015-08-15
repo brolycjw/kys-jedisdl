@@ -109,6 +109,7 @@ procedure ShowStatusByTeam(tnum: integer);
 procedure ShowStatus(rnum: integer); overload;
 procedure ShowStatus(rnum, x, y: integer); overload;
 procedure ShowSimpleStatus(rnum, x, y: integer);
+procedure ShowTalkStatus(rnum, x, y: integer);
 procedure MenuLeave;
 procedure MenuSystem;
 procedure ShowMenuSystem(menu: integer);
@@ -5063,6 +5064,88 @@ begin
   DrawEngShadowText(screen, @str[1], x + 50, y + 128, color1, color2);
   str := format('%9d', [Rrole[rnum].PhyPower]);
   DrawEngShadowText(screen, @str[1], x + 50, y + 149, ColColor($5), ColColor($7));
+
+  //SDL_UpdateRect2(screen, x, y, 146, 174);
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+end;
+
+procedure ShowTalkStatus(rnum, x, y: integer);
+var
+  i, magicnum: integer;
+  p: array[0..10] of integer;
+  str: WideString;
+  strs: array[0..3] of WideString;
+  color1, color2: uint32;
+begin
+  strs[0] := ('等級');
+  strs[1] := ('生命');
+  strs[2] := ('內力');;
+
+  DrawRectangle(screen, x, y, 120, 153, 0, ColColor(255), 50);
+  DrawHeadPic(Rrole[rnum].HeadNum, x + 30, y + 63);
+  str := Big5ToUnicode(@Rrole[rnum].Name, 5);
+  DrawShadowText(screen, @str[1], x + 60 - DrawLength(str) * 5, y + 65, ColColor($64), ColColor($66));
+  for i := 0 to 3 do
+    DrawShadowText(screen, @strs[i, 1], x + 3, y + 86 + 21 * i, ColColor($21), ColColor($23));
+
+  str := format('%6d', [Rrole[rnum].Level]);
+  DrawEngShadowText(screen, @str[1], x + 50, y + 86, ColColor($5), ColColor($7));
+
+  case Rrole[rnum].Hurt of
+    34..66:
+    begin
+      color1 := ColColor($E);
+      color2 := ColColor($10);
+    end;
+    67..1000:
+    begin
+      color1 := ColColor($14);
+      color2 := ColColor($16);
+    end;
+    else
+    begin
+      color1 := ColColor($5);
+      color2 := ColColor($7);
+    end;
+  end;
+
+  case Rrole[rnum].Poison of
+    34..66:
+    begin
+      color1 := ColColor($30);
+      color2 := ColColor($32);
+    end;
+    67..1000:
+    begin
+      color1 := ColColor($35);
+      color2 := ColColor($37);
+    end;
+    else
+    begin
+      color1 := ColColor($21);
+      color2 := ColColor($23);
+    end;
+  end;
+  str := format('%6d', [Rrole[rnum].MaxHP]);
+  DrawEngShadowText(screen, @str[1], x + 50, y + 107, color1, color2);
+
+  if Rrole[rnum].MPType = 0 then
+  begin
+    color1 := ColColor($50);
+    color2 := ColColor($4E);
+  end
+  else if Rrole[rnum].MPType = 1 then
+  begin
+    color1 := ColColor($5);
+    color2 := ColColor($7);
+  end
+  else
+  begin
+    color1 := ColColor($64);
+    color2 := ColColor($66);
+  end;
+  str := format('%6d', [Rrole[rnum].MaxMP]);
+  DrawEngShadowText(screen, @str[1], x + 50, y + 128, color1, color2);
 
   //SDL_UpdateRect2(screen, x, y, 146, 174);
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);

@@ -154,6 +154,8 @@ function BackHome(L: Plua_state): integer; cdecl;
 function EatOneItemScript(L: Plua_state): integer; cdecl;
 function SelectOneTeamMemberScript(L: Plua_state): integer; cdecl;
 
+function TalkMenu(L: Plua_state): integer; cdecl;
+
 implementation
 
 uses
@@ -331,6 +333,7 @@ begin
 
   lua_register(Lua_script, 'eatoneitem', EatOneItemScript);
   lua_register(Lua_script, 'selectoneteammember', SelectOneTeamMemberScript);
+  lua_register(Lua_script, 'talkmenu', TalkMenu);
 
 end;
 
@@ -674,7 +677,6 @@ var
   p: WideString;
   menuString: array of WideString;
 begin
-
   n := floor(lua_tonumber(L, -5));
   setlength(menuString, n);
   //setlength(menuengstring, 0);
@@ -1743,6 +1745,21 @@ function SelectOneTeamMemberScript(L: Plua_state): integer; cdecl;
 begin
   lua_pushnumber(L, SelectOneTeamMember(floor(lua_tonumber(L, -5)), floor(lua_tonumber(L, -4)),
     lua_tostring(L, -3), floor(lua_tonumber(L, -2)), floor(lua_tonumber(L, -1))));
+  Result := 1;
+end;
+
+function TalkMenu(L: Plua_state): integer; cdecl;
+var
+  rnum: integer;
+  menuString: array[0..3] of WideString;
+begin
+  menuString[0] := ('聊天');
+  menuString[1] := ('过招');
+  menuString[2] := ('送礼');
+  menuString[3] := ('邀请');
+  rnum := lua_gettop(L);
+  ShowTalkStatus(rnum, CENTER_X - 60, 50);
+  lua_pushnumber(L, CommonScrollMenu(CENTER_X - FONT_WIDTH, 203 + VERTICAL_SPACING, FONT_WIDTH * 2, 3, 6, menuString));
   Result := 1;
 end;
 

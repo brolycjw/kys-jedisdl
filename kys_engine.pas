@@ -24,8 +24,8 @@ uses
   ziputils,
   unzip,
   kys_main,
-  kys_type,
-  mythoutput;
+  kys_type;
+  //mythoutput;
 
 function EventFilter(p: pointer; e: PSDL_Event): longint; cdecl;
 //音频子程
