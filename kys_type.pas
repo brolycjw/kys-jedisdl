@@ -64,8 +64,10 @@ type
         Knowledge, Ethics, AttPoi, AttTwice, Repute, Aptitude, PracticeBook: smallint;
         ExpForBook: word;
         Magic, MagLevel: array[0..9] of smallint;
+        Neigong, NeigongLevel: array[0..4] of smallint;
+        ChanneledNeigong: smallint;
         TakingItem, TakingItemAmount: array[0..3] of smallint);
-      Address: (Data: array[0..90] of smallint);
+      Address: (Data: array[0..101] of smallint);
   end;
 
   TItem = record
@@ -106,6 +108,14 @@ type
         SoundNum, MagicType, AmiNum, HurtType, AttAreaType, NeedMP, Poison: smallint;
         Attack, MoveDistance, AttDistance, AddMP, HurtMP: array[0..9] of smallint);
       Address: (Data: array[0..67] of smallint);
+  end;
+
+  TNeigong = record
+    case TCallType of
+      Element: (ListNum: smallint;
+        Name: array[0..9] of char;
+        UnKnow: array[0..4] of smallint);
+      Address: (Data: array[0..10] of smallint);
   end;
 
   TShop = record
@@ -289,6 +299,7 @@ var
   Ritem: array[0..724] of TItem;
   Rscence: array[0..200] of TScence;
   Rmagic: array[0..998] of TMagic;
+  RNeigong: array[0..100] of TNeigong;
   RShop: array[0..10] of TShop;
   //R文件数据, 均远大于原有容量
 

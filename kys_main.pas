@@ -107,7 +107,7 @@ function CanEquip(rnum, inum: integer): boolean;
 procedure MenuStatus;
 procedure ShowStatusByTeam(tnum: integer);
 procedure ShowStatus(rnum: integer); overload;
-procedure ShowStatus(rnum, x, y: integer); overload;
+procedure ShowStatus(rnum, x, y, select: integer); overload;
 procedure ShowSimpleStatus(rnum, x, y: integer);
 procedure ShowTalkStatus(rnum, x, y: integer);
 procedure MenuLeave;
@@ -859,42 +859,28 @@ begin
     repeat
       if MODVersion <> 21 then
       begin
-        Rrole[0].MaxHP := 25 + random(26);
+        Rrole[0].MaxHP := 250 + random(26);
         Rrole[0].CurrentHP := Rrole[0].MaxHP;
-        Rrole[0].MaxMP := 25 + random(26);
+        Rrole[0].MaxMP := 250 + random(26);
         Rrole[0].CurrentMP := Rrole[0].MaxMP;
         Rrole[0].MPType := random(2);
         Rrole[0].IncLife := 1 + random(10);
 
-        Rrole[0].Attack := 25 + random(6);
-        Rrole[0].Speed := 25 + random(6);
-        Rrole[0].Defence := 25 + random(6);
+        Rrole[0].Attack := 250 + random(6);
+        Rrole[0].Speed := 250 + random(6);
+        Rrole[0].Defence := 250 + random(6);
         Rrole[0].Medcine := 25 + random(6);
         Rrole[0].UsePoi := 25 + random(6);
         Rrole[0].MedPoi := 25 + random(6);
-        Rrole[0].Fist := 25 + random(6);
-        Rrole[0].Sword := 25 + random(6);
-        Rrole[0].Knife := 25 + random(6);
+        Rrole[0].Fist := 250 + random(6);
+        Rrole[0].Sword := 250 + random(6);
+        Rrole[0].Knife := 250 + random(6);
         Rrole[0].Unusual := 25 + random(6);
         Rrole[0].HidWeapon := 25 + random(6);
 
       end;
 
       Rrole[0].Aptitude := 1 + random(100);
-
-      if MODVersion = 0 then
-      begin
-        Rrole[0].Magic[0] := 1;
-        if random(100) < 70 then
-          Rrole[0].Magic[0] := random(93);
-      end;
-      if MODVersion = 31 then
-        Rrole[0].Ethics := random(50) + random(50);
-
-      if MODVersion = 41 then
-      begin
-        Rrole[0].Magic[0] := 0;
-      end;
 
       Redraw;
       ShowStatus(0);
@@ -904,675 +890,6 @@ begin
       SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
       i := WaitAnyKey;
     until (i = SDLK_ESCAPE) or (i = SDLK_RETURN);
-
-    if MODVersion = 0 then
-    begin
-      if Name = 'TXDX尊使' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-        Rrole[0].Magic[0] := 62;
-        Rrole[0].MagLevel[0] := 800;
-
-        Rmagic[62].Attack[9] := 2000;
-
-        Ritem[93].Magic := 26;
-        Ritem[66].OnlyPracRole := -1;
-        Ritem[79].OnlyPracRole := -1;
-
-        instruct_32(82, 1);
-        instruct_32(74, 1);
-
-      end;
-      Rrole[13].Magic[1] := 91;
-    end;
-
-    if MODVersion = 22 then
-    begin
-      if Name = 'k小邪' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 150;
-        Rrole[0].Speed := 150;
-        Rrole[0].Defence := 130;
-        Rrole[0].Medcine := 130;
-        Rrole[0].UsePoi := 130;
-        Rrole[0].MedPoi := 130;
-        Rrole[0].Fist := 130;
-        Rrole[0].Sword := 130;
-        Rrole[0].Knife := 130;
-        Rrole[0].Unusual := 130;
-        Rrole[0].HidWeapon := 130;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 85;
-
-        Rrole[0].Magic[0] := 94;
-        Rrole[0].MagLevel[0] := 850;
-        Rrole[0].Magic[1] := 93;
-
-        Rrole[0].AttPoi := 0;
-      end;
-
-      if Name = '龍吟星落' then
-      begin
-        Rrole[0].MaxHP := 150;
-        Rrole[0].CurrentHP := 120;
-        Rrole[0].MaxMP := 150;
-        Rrole[0].CurrentMP := 220;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 130;
-        Rrole[0].Speed := 130;
-        Rrole[0].Defence := 130;
-        Rrole[0].Medcine := 130;
-        Rrole[0].UsePoi := 130;
-        Rrole[0].MedPoi := 130;
-        Rrole[0].Fist := 130;
-        Rrole[0].Sword := 130;
-        Rrole[0].Knife := 130;
-        Rrole[0].Unusual := 130;
-        Rrole[0].HidWeapon := 130;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 168;
-        Rrole[0].Magic[1] := 169;
-        Rrole[0].Magic[2] := 170;
-        Rrole[0].Magic[3] := 171;
-        Rrole[0].Magic[4] := 172;
-      end;
-
-      if Name = '小隨' then
-      begin
-        Rrole[0].MaxHP := 150;
-        Rrole[0].CurrentHP := 120;
-        Rrole[0].MaxMP := 150;
-        Rrole[0].CurrentMP := 220;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 130;
-        Rrole[0].Speed := 130;
-        Rrole[0].Defence := 130;
-        Rrole[0].Medcine := 130;
-        Rrole[0].UsePoi := 130;
-        Rrole[0].MedPoi := 130;
-        Rrole[0].Fist := 130;
-        Rrole[0].Sword := 130;
-        Rrole[0].Knife := 130;
-        Rrole[0].Unusual := 130;
-        Rrole[0].HidWeapon := 130;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 94;
-        Rrole[0].MagLevel[0] := 850;
-
-        Rrole[0].AttTwice := 1;
-      end;
-
-      if Name = '破大俠' then
-      begin
-        Rrole[0].MaxHP := 1150;
-        Rrole[0].CurrentHP := 1120;
-        Rrole[0].MaxMP := 1150;
-        Rrole[0].CurrentMP := 1220;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 230;
-        Rrole[0].Speed := 230;
-        Rrole[0].Defence := 230;
-        Rrole[0].Medcine := 230;
-        Rrole[0].UsePoi := 230;
-        Rrole[0].MedPoi := 230;
-        Rrole[0].Fist := 230;
-        Rrole[0].Sword := 230;
-        Rrole[0].Knife := 230;
-        Rrole[0].Unusual := 230;
-        Rrole[0].HidWeapon := 230;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 100;
-
-        Rrole[0].Magic[0] := 168;
-        Rrole[0].Magic[1] := 169;
-        Rrole[0].Magic[2] := 170;
-        Rrole[0].Magic[3] := 171;
-        Rrole[0].Magic[4] := 172;
-        Rrole[0].Magic[5] := 94;
-
-        //rrole[0].AttTwice := 1;
-      end;
-
-      if Name = '鳳凰' then
-      begin
-        Rrole[0].MaxHP := 250;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 250;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-        Rrole[0].Aptitude := 100;
-        for i := 1 to 14 do
-        begin
-          Rrole[i].MaxHP := 500;
-          Rrole[i].CurrentHP := 500;
-          Rrole[i].MaxMP := 500;
-          Rrole[i].CurrentMP := 500;
-          Rrole[i].MPType := 2;
-          Rrole[i].IncLife := 30;
-
-          Rrole[i].Attack := 300;
-          Rrole[i].Speed := 100;
-          Rrole[i].Defence := 130;
-          Rrole[i].Medcine := 130;
-          Rrole[i].UsePoi := 130;
-          Rrole[i].MedPoi := 130;
-          Rrole[i].Fist := 130;
-          Rrole[i].Sword := 130;
-          Rrole[i].Knife := 130;
-          Rrole[i].Unusual := 130;
-          Rrole[i].HidWeapon := 130;
-
-          Rrole[i].Aptitude := 100;
-        end;
-      end;
-    end;
-
-    if MODVersion = 23 then
-    begin
-      if Name = '小小豬' then
-      begin
-        Rrole[0].MaxHP := 10;
-        Rrole[0].CurrentHP := 10;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 10;
-        Rrole[0].Speed := 10;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 27;
-        Rrole[0].MagLevel[0] := 850;
-        Rrole[0].Magic[1] := 37;
-        Rrole[0].MagLevel[1] := 850;
-        Rrole[0].Magic[2] := 94;
-        Rrole[0].MagLevel[2] := 850;
-        Rrole[0].Magic[3] := 62;
-        Rrole[0].MagLevel[3] := 850;
-
-        Rrole[0].AttPoi := 0;
-      end;
-
-      if Name = 'k小邪' then
-      begin
-        Rrole[0].MaxHP := 150;
-        Rrole[0].CurrentHP := 120;
-        Rrole[0].MaxMP := 150;
-        Rrole[0].CurrentMP := 220;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 27;
-        Rrole[0].MagLevel[0] := 850;
-
-        Rrole[0].AttPoi := 70;
-
-        Rrole[0].Magic[1] := 15;
-
-        for i := 0 to 9 do
-        begin
-          Rmagic[15].Attack[i] := 1400;
-          Rmagic[16].Attack[i] := 1400;
-          Rmagic[17].Attack[i] := 1000;
-          Rmagic[15].AttDistance[i] := 6;
-          Rmagic[16].AttDistance[i] := 4;
-          Rmagic[17].AttDistance[i] := 8;
-        end;
-      end;
-
-      if Name = '南宮夢' then
-      begin
-        Rrole[0].MaxHP := 500;
-        Rrole[0].CurrentHP := 500;
-        Rrole[0].MaxMP := 500;
-        Rrole[0].CurrentMP := 500;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 70;
-        Rrole[0].Speed := 90;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 60;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 37;
-        Rrole[0].MagLevel[0] := 890;
-
-        Rmagic[37].AttAreaType := 3;
-        Rmagic[37].MoveDistance[9] := 4;
-        Rmagic[37].AttDistance[9] := 4;
-      end;
-
-      if Name = '游客' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 94;
-        Rrole[0].MagLevel[0] := 850;
-
-        Rrole[0].AttTwice := 1;
-      end;
-
-      if Name = '飛蟲王' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 60;
-
-        Rrole[0].Magic[0] := 62;
-        Rrole[0].MagLevel[0] := 850;
-
-        Rrole[0].AttPoi := 95;
-      end;
-
-      if Name = '破劍式' then
-      begin
-        Rrole[0].MaxHP := 499;
-        Rrole[0].CurrentHP := 499;
-        Rrole[0].MaxMP := 499;
-        Rrole[0].CurrentMP := 499;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 5;
-
-        Rrole[0].Attack := 90;
-        Rrole[0].Speed := 90;
-        Rrole[0].Defence := 90;
-        Rrole[0].Medcine := 90;
-        Rrole[0].UsePoi := 90;
-        Rrole[0].MedPoi := 90;
-        Rrole[0].Fist := 90;
-        Rrole[0].Sword := 90;
-        Rrole[0].Knife := 90;
-        Rrole[0].Unusual := 90;
-        Rrole[0].HidWeapon := 90;
-
-        Rrole[0].Aptitude := 100;
-
-        Rrole[0].Knowledge := 0;
-
-        Rrole[0].Magic[0] := 27;
-        Rrole[0].MagLevel[0] := 899;
-        Rrole[0].Magic[1] := 37;
-        Rrole[0].MagLevel[1] := 899;
-        Rrole[0].Magic[2] := 94;
-        Rrole[0].MagLevel[2] := 899;
-        Rrole[0].Magic[3] := 62;
-        Rrole[0].MagLevel[3] := 899;
-
-        Rrole[0].AttPoi := 90;
-      end;
-
-      if Name = '9523' then
-      begin
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 10;
-        Rrole[0].Speed := 10;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        for i := 0 to 9 do
-        begin
-          Rmagic[15].Attack[i] := 1400;
-          Rmagic[16].Attack[i] := 1400;
-          Rmagic[17].Attack[i] := 1000;
-          Rmagic[15].AttDistance[i] := 6;
-          Rmagic[16].AttDistance[i] := 4;
-          Rmagic[17].AttDistance[i] := 8;
-        end;
-
-        Rrole[0].Magic[0] := 15;
-        Rrole[0].Magic[1] := 16;
-        Rrole[0].Magic[2] := 17;
-      end;
-
-      if Name = '鳳凰ice' then
-      begin
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-        Rrole[0].Aptitude := 100;
-        for i := 0 to 99 do
-        begin
-          if leavelist[i] > 0 then
-          begin
-            Rrole[leavelist[i]].IncLife := 30;
-            Rrole[leavelist[i]].MPType := 2;
-            Rrole[leavelist[i]].Attack := 90;
-            Rrole[leavelist[i]].Aptitude := 95;
-          end;
-        end;
-      end;
-      Rrole[401] := Rrole[0];
-      Rrole[402] := Rrole[0];
-      Rrole[403] := Rrole[0];
-      Rrole[404] := Rrole[0];
-    end;
-
-    if MODVersion = 11 then
-    begin
-      if Name = '小小豬' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-        Rrole[0].Ethics := 90;
-        //rrole[0].Magic[0] := 62;
-        //rrole[0].MagLevel[0] := 800;
-
-        //rmagic[62].Attack[9] := 2000;
-
-        //ritem[93].Magic := 26;
-        //ritem[66].OnlyPracRole := -1;
-        //ritem[79].OnlyPracRole := -1;
-
-        //instruct_32(82, 1);
-        //instruct_32(74, 1);
-
-      end;
-
-      if Name = '晴空飛雪' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-
-        //rrole[0].Magic[0] := 62;
-        //rrole[0].MagLevel[0] := 800;
-
-        //rmagic[62].Attack[9] := 2000;
-
-        //ritem[93].Magic := 26;
-        //ritem[66].OnlyPracRole := -1;
-        //ritem[79].OnlyPracRole := -1;
-
-        instruct_32(19, 10000);
-        //instruct_32(74, 1);
-
-      end;
-    end;
-
-    if MODVersion = 12 then
-    begin
-      if Name = '小小豬' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-      end;
-      if Name = '見賢思齊' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 60;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 60;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 45;
-      end;
-    end;
-
-    if MODVersion = 31 then
-    begin
-      if Name = '南宮夢' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 300;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 300;
-        Rrole[0].Medcine := 300;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 300;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 300;
-
-        Rrole[0].Aptitude := 100;
-        Rrole[0].Ethics := 95;
-      end;
-    end;
-
-    if MODVersion = 41 then
-    begin
-      if Name = 'leo' then
-      begin
-        Rrole[0].MaxHP := 50;
-        Rrole[0].CurrentHP := 50;
-        Rrole[0].MaxMP := 50;
-        Rrole[0].CurrentMP := 50;
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 10;
-
-        Rrole[0].Attack := 30;
-        Rrole[0].Speed := 30;
-        Rrole[0].Defence := 30;
-        Rrole[0].Medcine := 30;
-        Rrole[0].UsePoi := 30;
-        Rrole[0].MedPoi := 30;
-        Rrole[0].Fist := 30;
-        Rrole[0].Sword := 30;
-        Rrole[0].Knife := 30;
-        Rrole[0].Unusual := 30;
-        Rrole[0].HidWeapon := 30;
-
-        Rrole[0].Aptitude := 100;
-      end;
-    end;
-
-    if MODVersion = 21 then
-    begin
-      if (Name = '古天奇') or (Name = '青狼火花') then
-      begin
-        Rrole[0].MPType := 2;
-        Rrole[0].IncLife := 20;
-        Rrole[0].Aptitude := 100;
-      end;
-    end;
 
     ShowStatus(0);
     DrawShadowText(screen, @str[1], 30, CENTER_Y + 111, ColColor($23), ColColor($21));
@@ -1593,7 +910,7 @@ procedure LoadR(num: integer);
 var
   filename: string;
   idx, grp, i1, i2, len, ScenceAmount: integer;
-  BasicOffset, RoleOffset, ItemOffset, ScenceOffset, MagicOffset, WeiShopOffset, i: integer;
+  BasicOffset, RoleOffset, ItemOffset, ScenceOffset, MagicOffset, NeigongOffset, WeiShopOffset, i: integer;
 begin
   SaveNum := num;
   filename := 'r' + IntToStr(num);
@@ -1607,6 +924,7 @@ begin
   FileRead(idx, ItemOffset, 4);
   FileRead(idx, ScenceOffset, 4);
   FileRead(idx, MagicOffset, 4);
+  FileRead(idx, NeigongOffset, 4);
   FileRead(idx, WeiShopOffset, 4);
   FileRead(idx, len, 4);
   FileSeek(grp, 0, 0);
@@ -1624,8 +942,6 @@ begin
   FileRead(grp, shipy1, 2);
   FileRead(grp, shipface, 2);
   FileRead(grp, teamlist[0], 2 * 6);
-  if MODVersion = 62 then
-    FileSeek(grp, 24, 1);
 
   Setlength(RItemlist, MAX_ITEM_AMOUNT);
   for i := 0 to MAX_ITEM_AMOUNT - 1 do
@@ -1638,7 +954,8 @@ begin
   FileRead(grp, Rrole[0], ItemOffset - RoleOffset);
   FileRead(grp, Ritem[0], ScenceOffset - ItemOffset);
   FileRead(grp, Rscence[0], MagicOffset - ScenceOffset);
-  FileRead(grp, Rmagic[0], WeiShopOffset - MagicOffset);
+  FileRead(grp, Rmagic[0], NeigongOffset - MagicOffset);
+  FileRead(grp, RNeigong[0], WeiShopOffset - NeigongOffset);
   FileRead(grp, Rshop[0], len - WeiShopOffset);
   FileClose(idx);
   FileClose(grp);
@@ -1688,7 +1005,7 @@ procedure SaveR(num: integer);
 var
   filename: string;
   idx, grp, i1, i2, length, ScenceAmount: integer;
-  BasicOffset, RoleOffset, ItemOffset, ScenceOffset, MagicOffset, WeiShopOffset, i: integer;
+  BasicOffset, RoleOffset, ItemOffset, ScenceOffset, MagicOffset, NeigongOffset, WeiShopOffset, i: integer;
 begin
   SaveNum := num;
   filename := 'r' + IntToStr(num);
@@ -1702,6 +1019,7 @@ begin
   FileRead(idx, ItemOffset, 4);
   FileRead(idx, ScenceOffset, 4);
   FileRead(idx, MagicOffset, 4);
+  FileRead(idx, NeigongOffset, 4);
   FileRead(idx, WeiShopOffset, 4);
   FileRead(idx, length, 4);
   FileSeek(grp, 0, 0);
@@ -1731,7 +1049,8 @@ begin
   FileWrite(grp, Rrole[0], ItemOffset - RoleOffset);
   FileWrite(grp, Ritem[0], ScenceOffset - ItemOffset);
   FileWrite(grp, Rscence[0], MagicOffset - ScenceOffset);
-  FileWrite(grp, Rmagic[0], WeiShopOffset - MagicOffset);
+  FileWrite(grp, Rmagic[0], NeigongOffset - MagicOffset);
+  FileWrite(grp, RNeigong[0], WeiShopOffset - NeigongOffset);
   FileWrite(grp, Rshop[0], length - WeiShopOffset);
   FileClose(idx);
   FileClose(grp);
@@ -4212,35 +3531,6 @@ begin
   words3[11] := ('暗器');
   words3[12] := ('資質');
 
-  if MODVersion = 22 then
-  begin
-    words2[4] := ('靈力');
-    words2[5] := ('靈力');
-    words2[6] := ('靈力');
-    words2[7] := ('武力');
-    words2[8] := ('移動');
-    words2[10] := ('仙術');
-    words2[11] := ('毒術');
-    words2[14] := ('火系');
-    words2[15] := ('水系');
-    words2[16] := ('雷系');
-    words2[17] := ('土系');
-    words2[18] := ('射擊');
-
-    words3[0] := ('靈力');
-    words3[1] := ('靈力');
-    words3[2] := ('武力');
-    words3[3] := ('移動');
-    words3[4] := ('毒術');
-    words3[5] := ('仙術');
-    words3[7] := ('火系');
-    words3[8] := ('水系');
-    words3[9] := ('雷系');
-    words3[10] := ('土系');
-    words3[11] := ('射擊');
-    words3[12] := ('智力');
-  end;
-
   LoadFreshScreen(0, 0, screen.w, screen.h);
   DrawRectangle(screen, 110, 30, 386, 25, 0, ColColor(255), 50);
   DrawRectangle(screen, 110, 60, 386, 25, 0, ColColor(255), 50);
@@ -4474,7 +3764,7 @@ begin
         str := ('誰要裝備');
         str1 := Big5ToUnicode(@Ritem[inum].Name);
         DrawTextWithRect(screen, @str[1], 80, 30, length(str1) * 22 + 80, ColColor($21), ColColor($23));
-        DrawShadowText(screen, @str1[1], 160, 32, ColColor($64), ColColor($66));
+        DrawShadowText(screen, @str1[1], 162, 32, ColColor($64), ColColor($66));
         SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
         menu := SelectOneTeamMember(80, 65, '', 0, 0);
         if menu >= 0 then
@@ -4522,7 +3812,7 @@ begin
         str := ('誰要修煉');
         str1 := Big5ToUnicode(@Ritem[inum].Name);
         DrawTextWithRect(screen, @str[1], 80, 30, length(str1) * 22 + 80, ColColor($21), ColColor($23));
-        DrawShadowText(screen, @str1[1], 160, 32, ColColor($64), ColColor($66));
+        DrawShadowText(screen, @str1[1], 162, 32, ColColor($64), ColColor($66));
         SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
         menu := SelectOneTeamMember(80, 65, '', 0, 0);
         if menu >= 0 then
@@ -4673,7 +3963,7 @@ begin
   Redraw;
   RecordFreshScreen(0, 0, screen.w, screen.h);
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
-  DrawTextWithRect(screen, @str[1], 10, 30, 132, ColColor($21), ColColor($23));
+  DrawTextWithRect(screen, @str[1], 10, 10, 132, ColColor($21), ColColor($23));
   setlength(menuString, 6);
   setlength(menuEngString, 0);
   amount := 0;
@@ -4687,7 +3977,7 @@ begin
     end;
   end;
 
-  menu := CommonMenu(10, 65, 85, amount - 1, 0, menuString, menuEngString, @ShowStatusByTeam);
+  menu := CommonMenu(10, 45, 85, amount - 1, 0, menuString, menuEngString, @ShowStatusByTeam);
   Redraw;
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
   //menu := SelectOneTeamMember(27, 65, '%3d', 15, 0);
@@ -4704,23 +3994,78 @@ end;
 //显示状态
 
 procedure ShowStatusByTeam(tnum: integer);
+var
+  x, y, prevselect, curselect: integer;
 begin
+  x := 460;
+  y := 305;
+  curselect := -1;
   if TeamList[tnum] >= 0 then
-    ShowStatus(TeamList[tnum], 100, 65);
+  begin
+    ShowStatus(TeamList[tnum], 100, 45, -1);
+    while (SDL_WaitEvent(@event) >= 0) do
+    begin
+      CheckBasicEvent;
+      case event.type_ of
+        SDL_MOUSEBUTTONUP:
+        begin
+          if (event.button.button = SDL_BUTTON_LEFT) then
+          begin
+            if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
+              (round(event.button.x / (RESOLUTIONX / screen.w)) < 625) and
+              (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
+              (round(event.button.y / (RESOLUTIONY / screen.h)) < 417) then
+            begin
+              Rrole[TeamList[tnum]].ChanneledNeigong := curselect;
+              ShowStatus(TeamList[tnum], 100, 45, curselect);
+            end;
+          end;
+        end;
+        SDL_MOUSEMOTION:
+        begin
+          prevselect := curselect;
+          if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
+            (round(event.button.x / (RESOLUTIONX / screen.w)) < 625) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < 417) then
+          begin
+            curselect := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div 22;
+            if curselect > 4 then
+              curselect := 4;
+            if curselect < 0 then
+              curselect := 0;
+            if prevselect <> curselect then
+            begin
+              ShowStatus(TeamList[tnum], 100, 45, curselect);
+            end;
+          end
+          else
+          begin
+            curselect := -1;
+            if prevselect <> -1 then
+              ShowStatus(TeamList[tnum], 100, 45, -1);
+          end;
+        end;
+      end;
+    end;
+    //清空键盘键和鼠标键值, 避免影响其余部分
+    //event.key.keysym.sym := 0;
+    //event.button.button := 0;
+  end;
 end;
 
 procedure ShowStatus(rnum: integer); overload;
 begin
-  ShowStatus(rnum, CENTER_X - 273, 65);
+  ShowStatus(rnum, CENTER_X - 273, 45, -1);
 end;
 
-procedure ShowStatus(rnum, x, y: integer); overload;
+procedure ShowStatus(rnum, x, y, select: integer); overload;
 var
-  i, magicnum, mlevel, needexp: integer;
+  i, magicnum, mlevel, neigongnum, neigonglevel, needexp: integer;
   p: array[0..10] of integer;
   addatk, adddef, addspeed: integer;
   str: WideString;
-  strs: array[0..21] of WideString;
+  strs: array[0..22] of WideString;
   color1, color2: uint32;
   Name: WideString;
 begin
@@ -4733,34 +4078,20 @@ begin
   strs[6] := ('攻擊');
   strs[7] := ('防禦');
   strs[8] := ('輕功');
-  strs[9] := ('醫療能力');
-  strs[10] := ('用毒能力');
-  strs[11] := ('解毒能力');
-  strs[12] := ('拳掌功夫');
-  strs[13] := ('御劍能力');
-  strs[14] := ('耍刀技巧');
-  strs[15] := ('特殊兵器');
-  strs[16] := ('暗器技巧');
+  strs[9] := ('醫療');
+  strs[10] := ('用毒');
+  strs[11] := ('解毒');
+  strs[12] := ('拳掌');
+  strs[13] := ('御劍');
+  strs[14] := ('耍刀');
+  strs[15] := ('特殊');
+  strs[16] := ('暗器');
   strs[17] := ('裝備物品');
   strs[18] := ('修煉物品');
   strs[19] := ('所會武功');
   strs[20] := ('受傷');
   strs[21] := ('中毒');
-
-  if MODVersion = 22 then
-  begin
-    strs[2] := ('靈力');
-    strs[6] := ('武力');
-    strs[8] := ('移動');
-    strs[9] := ('仙術能力');
-    strs[10] := ('毒術能力');
-    strs[12] := ('火系能力');
-    strs[13] := ('水系能力');
-    strs[14] := ('雷系能力');
-    strs[15] := ('土系能力');
-    strs[16] := ('射擊能力');
-    strs[19] := ('所會法術');
-  end;
+  strs[22] := ('所會内功');
 
   p[0] := 43;
   p[1] := 45;
@@ -4777,7 +4108,7 @@ begin
   if where <= 2 then
     LoadFreshScreen(0, 0, screen.w, screen.h);
 
-  DrawRectangle(screen, x, y, 525, 315, 0, ColColor(255), 50);
+  DrawRectangle(screen, x, y, 525, 372, 0, ColColor(255), 50);
 
   //显示头像
   DrawHeadPic(Rrole[rnum].HeadNum, x + 60, y + 80);
@@ -4870,8 +4201,8 @@ begin
     end;
     else
     begin
-      color1 := ColColor($7);
-      color2 := ColColor($5);
+      color1 := ColColor($5);
+      color2 := ColColor($7);
     end;
   end;
   str := format('%4d', [Rrole[rnum].CurrentHP]);
@@ -4940,12 +4271,12 @@ begin
   //drawengshadowtext(@str[1], 150, 362, colcolor($35), colcolor($37));
 
   //装备, 秘笈
-  DrawShadowText(screen, @strs[17, 1], x + 180, y + 240, ColColor($21), ColColor($23));
-  DrawShadowText(screen, @strs[18, 1], x + 360, y + 240, ColColor($21), ColColor($23));
+  DrawShadowText(screen, @strs[17, 1], x + 10, y + 240, ColColor($21), ColColor($23));
+  DrawShadowText(screen, @strs[18, 1], x + 180, y + 240, ColColor($21), ColColor($23));
   if Rrole[rnum].Equip[0] >= 0 then
-    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[0]].Name, x + 190, y + 261, ColColor($5), ColColor($7));
+    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[0]].Name, x + 20, y + 261, ColColor($5), ColColor($7));
   if Rrole[rnum].Equip[1] >= 0 then
-    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[1]].Name, x + 190, y + 282, ColColor($5), ColColor($7));
+    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[1]].Name, x + 20, y + 282, ColColor($5), ColColor($7));
 
   //计算秘笈需要经验
   if Rrole[rnum].PracticeBook >= 0 then
@@ -4960,15 +4291,41 @@ begin
           break;
         end;
     needexp := mlevel * Ritem[Rrole[rnum].PracticeBook].NeedExp * (7 - Rrole[rnum].Aptitude div 15);
-    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].PracticeBook].Name, x + 370, y + 261, ColColor($5), ColColor($7));
+    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].PracticeBook].Name, x + 190, y + 261, ColColor($5), ColColor($7));
     str := format('%5d/%5d', [uint16(Rrole[rnum].ExpForBook), needexp]);
     if mlevel = 10 then
       str := format('%5d/=', [uint16(Rrole[rnum].ExpForBook)]);
-    DrawEngShadowText(screen, @str[1], x + 380, y + 282, ColColor($64), ColColor($66));
+    DrawEngShadowText(screen, @str[1], x + 200, y + 282, ColColor($64), ColColor($66));
   end;
 
-  SDL_UpdateRect2(screen, x, y, 536, 316);
-
+  //顯示内功
+  DrawShadowText(screen, @strs[22, 1], x + 360, y + 240, ColColor($21), ColColor($23));
+  for i := 0 to 4 do
+  begin
+    neigongnum := Rrole[rnum].Neigong[i];
+    if neigongnum >= 0 then
+    begin
+      if Rrole[rnum].ChanneledNeigong = i then
+      begin
+        color1 := ColColor($14);
+        color2 := ColColor($16);
+      end
+      else
+      begin
+        color1 := ColColor($5);
+        color2 := ColColor($7);
+      end;
+      if i = select then
+      begin
+        color1 := ColColor($64);
+        color2 := ColColor($66);
+      end;
+      DrawBig5ShadowText(screen, @RNeigong[neigongnum].Name, x + 360, y + 261 + 21 * i, color1, color2);
+      str := format('%3d', [Rrole[rnum].NeigongLevel[i] div 100 + 1]);
+      DrawEngShadowText(screen, @str[1], x + 480, y + 261 + 21 * i, ColColor($64), ColColor($66));
+    end;
+  end;
+  SDL_UpdateRect2(screen, x, y, 536, 373);
 end;
 
 //显示简单状态(x, y表示位置)
@@ -4985,10 +4342,6 @@ begin
   strs[1] := ('生命');
   strs[2] := ('內力');
   strs[3] := ('體力');
-  if MODVersion = 22 then
-  begin
-    strs[2] := ('靈力');
-  end;
 
   DrawRectangle(screen, x, y, 145, 173, 0, ColColor(255), 50);
   DrawHeadPic(Rrole[rnum].HeadNum, x + 50, y + 63);
@@ -5161,8 +4514,6 @@ begin
   if (where = 0) or (MODVersion = 22) then
   begin
     str := ('要求誰離隊？');
-    if MODVersion = 22 then
-      str := '選擇一個隊友';
     DrawTextWithRect(screen, @str[1], 80, 30, 132, ColColor($21), ColColor($23));
     menu := SelectOneTeamMember(80, 65, '%3d', 15, 0);
     if menu >= 0 then
@@ -5415,15 +4766,6 @@ begin
   menuString[3] := ('載入進度四');
   menuString[4] := ('載入進度五');
   menuString[5] := ('載入自動檔');
-  if MODVersion = 23 then
-  begin
-    menuString[0] := ('載入夢境一');
-    menuString[1] := ('載入夢境二');
-    menuString[2] := ('載入夢境三');
-    menuString[3] := ('載入夢境四');
-    menuString[4] := ('載入夢境五');
-    menuString[5] := ('最近的夢境');
-  end;
   //writeln(pword(@menustring[0][2])^);
   menu := CommonMenu(TitlePosition.x - 10, TitlePosition.y - 20, 107, 5, menuString);
   if menu >= 0 then
@@ -5713,22 +5055,6 @@ begin
     word[22] := ('增加攻擊帶毒');
     word[23] := ('受傷程度');
 
-    if MODVersion = 22 then
-    begin
-      word[4] := ('靈力陰陽合一');
-      word[5] := ('增加靈力');
-      word[6] := ('增加靈力最大值');
-      word[7] := ('增加武力');
-      word[8] := ('增加移動');
-      word[10] := ('增加仙術能力');
-      word[11] := ('增加用毒術能力');
-      word[14] := ('增加火系能力');
-      word[15] := ('增加水系能力');
-      word[16] := ('增加雷系能力');
-      word[17] := ('增加土系能力');
-      word[18] := ('增加射擊能力');
-    end;
-
     DrawRectangle(screen, 100, 70, 100 + length(pchar(@Ritem[inum].Name)) * 10, 25, 0, ColColor(255), 50);
     str := '服用';
     if Ritem[inum].ItemType = 2 then
@@ -5860,14 +5186,7 @@ begin
     end;
     setlength(e, len div 2 + 1);
     move(KDef[offset], e[0], len);
-    {if MODVersion = 23 then
-    begin
-      for i := 0 to length div 2 do
-      begin
-        if (e[i] <= 67) and (e[i] >= 0) then
-          e[i] := k[e[i]];
-      end;
-    end;}
+
     i := 0;
     len := length(e);
     if IsConsole then
