@@ -101,6 +101,7 @@ function EnterNumber(MinValue, MaxValue, x, y: integer; Default: integer = 0): s
 procedure SetAttribute(rnum, selecttype, modlevel, minlevel, maxlevel: integer);
 
 
+
 implementation
 
 uses
@@ -2987,6 +2988,7 @@ procedure SetAttribute(rnum, selecttype, modlevel, minlevel, maxlevel: integer);
 begin
 
 end;
+
 
 
 end.

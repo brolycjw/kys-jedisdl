@@ -267,8 +267,8 @@ begin
     FileRead(idx, offset, 4);
     FileClose(idx);
   end;
-  grp := FileOpen(AppPath + 'resource/warfld.grp', fmopenread);
-  FileSeek(grp, offset, 0);
+  grp := FileOpen(AppPath + 'save/allsin.grp', fmopenread);
+  FileSeek(grp, fieldnum * 6 * 64 * 64 * 2, 0);
   FileRead(grp, Bfield[0, 0, 0], 2 * 64 * 64 * 2);
   FileClose(grp);
 

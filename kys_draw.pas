@@ -32,6 +32,7 @@ procedure DrawHeadPic(num, px, py: integer; scr: PSDL_Surface); overload;
 procedure DrawHeadPic(num, px, py, shadow, alpha, depth: integer; mixColor: uint32; mixAlpha: integer); overload;
 procedure DrawBPic(num, px, py, shadow: integer); overload;
 procedure DrawBPic(num, px, py, shadow, alpha, depth: integer; mixColor: uint32; mixAlpha: integer); overload;
+procedure DrawBRolePic(rnum, num, px, py, shadow, alpha, depth: integer; mixColor: uint32; mixAlpha: integer); overload;
 procedure DrawBPicInRect(num, px, py, shadow, x, y, w, h: integer);
 procedure InitialBPic(num, px, py: integer); overload;
 procedure InitialBPic(num, px, py, needBlock, depth: integer); overload;
@@ -352,6 +353,25 @@ begin
     else
     begin
       DrawRLE8Pic(@ACol[0], num, px, py, @WIdx[0], @WPic[0], nil, nil, 0, 0, 0, shadow, alpha,
+        @BlockImg2[0], @BlockScreen, ImageWidth, ImageHeight, sizeof(BlockImg2[0]), depth, mixColor, mixAlpha);
+    end;
+  end;
+
+end;
+
+procedure DrawBRolePic(rnum, num, px, py, shadow, alpha, depth: integer; mixColor: uint32; mixAlpha: integer); overload;
+begin
+  if (num >= 0) and (num < BRolePicCount[rnum]) then
+  begin
+    if PNG_TILE > 0 then
+    begin
+      //LoadOnePNGTile('resource/wmap/', num, BPNGIndex[num], @BPNGTile[0]);
+      DrawPNGTile(BPNGIndex[num], 0, nil, screen, px, py, shadow, alpha, mixColor, mixAlpha,
+        depth, @BlockImg2[0], ImageWidth, ImageHeight, sizeof(BlockImg2[0]), BlockScreen.x, BlockScreen.y);
+    end
+    else
+    begin
+      DrawRLE8Pic(@ACol[0], num, px, py, @WRoleIdx[rnum][0], @WRolePic[rnum][0], nil, nil, 0, 0, 0, shadow, alpha,
         @BlockImg2[0], @BlockScreen, ImageWidth, ImageHeight, sizeof(BlockImg2[0]), depth, mixColor, mixAlpha);
     end;
   end;
@@ -1278,35 +1298,24 @@ end;
 
 procedure DrawRoleOnBfield(x, y: integer; mixColor: uint32 = 0; mixAlpha: integer = 0; Alpha: integer = 75);
 var
-  i1, i2, xpoint, ypoint, depth: integer;
+  i1, i2, xpoint, ypoint, depth, bnum, rnum, i, animode: integer;
   pos, pos1: Tposition;
+  filename: string;
 begin
   pos := GetPositionOnScreen(x, y, Bx, By);
-  //for i1 := x - 1 to x + 10 do
-  //for i2 := y - 1 to y + 10 do
-  //begin
-  //if (i1 = x) and (i2 = y) then
-  //if BRole[Bfield[2, x, y]].ShowNumber < 0 then
-  //DrawBPic2(Rrole[Brole[Bfield[2, x, y]].rnum].HeadNum * 4 + Brole[Bfield[2, x, y]].Face + BEGIN_BATTLE_ROLE_PIC, pos.x, pos.y, 0, 75, x + y, $00FF0000, 50)
-  //else
   depth := CalBlock(x, y);
-  if MODVersion = 62 then
+  bnum := Bfield[2, x, y];
+  rnum := Brole[bnum].rnum;
+  for i := 0 to 4 do
   begin
-    DrawBPic(Rrole[Brole[Bfield[2, x, y]].rnum].ListNum * 4 + Brole[Bfield[2, x, y]].Face + BEGIN_BATTLE_ROLE_PIC,
-      pos.x, pos.y, 0, Alpha, depth, mixColor, mixAlpha);
-    exit;
+    if (Rrole[rnum].AmiFrameNum[i] > 0) then
+    begin
+      animode := i;
+      break;
+    end;
   end;
-  DrawBPic(Rrole[Brole[Bfield[2, x, y]].rnum].HeadNum * 4 + Brole[Bfield[2, x, y]].Face + BEGIN_BATTLE_ROLE_PIC,
+  DrawBRolePic(rnum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
     pos.x, pos.y, 0, Alpha, depth, mixColor, mixAlpha);
-
-  //if (Bfield[1, i1, i2] > 0) then
-  {begin
-    pos1 := GetPositionOnScreen(i1, i2, Bx, By);
-    DrawBPicInRect(Bfield[1, i1, i2] div 2, pos1.x, pos1.y, 0, pos.x - 20, pos.y - 60, 40, 60);
-    if (Bfield[2, i1, i2] >= 0) and (Brole[Bfield[2, i1, i2]].Dead = 0) then
-      DrawBPicInRect(Rrole[Brole[Bfield[2, x, y]].rnum].HeadNum * 4 + Brole[Bfield[2, i1, i2]].Face + BEGIN_BATTLE_ROLE_PIC, pos1.x, pos1.y, 0, pos.x - 20, pos.y - 60, 40, 60);
-  end;}
-
 end;
 
 //初始化战场映像
@@ -1424,7 +1433,7 @@ end;
 
 procedure DrawBFieldWithCursor(step: integer);
 var
-  i, i1, i2, bnum, depth, x, y: integer;
+  i, i1, i2, bnum, rnum, depth, x, y, animode: integer;
   pos: TPosition;
 begin
   CalLTPosOnImageByCenter(Bx, By, x, y);
@@ -1453,15 +1462,23 @@ begin
     begin
       pos := GetPositionOnScreen(i1, i2, Bx, By);
       bnum := Bfield[2, i1, i2];
+      rnum := Brole[bnum].rnum;
+      for i := 0 to 4 do
+      begin
+        if (Rrole[rnum].AmiFrameNum[i] > 0) then
+        begin
+          animode := i;
+          break;
+        end;
+      end;
       if (bnum >= 0) and (Brole[bnum].Dead = 0) then
       begin
         if (Brole[bnum].Team <> Brole[Bfield[2, Bx, By]].Team) and (Bfield[4, i1, i2] > 0) then
-          DrawBPic(Rrole[Brole[bnum].rnum].HeadNum * 4 + Brole[bnum].Face + BEGIN_BATTLE_ROLE_PIC,
+          DrawBRolePic(rnum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
             pos.x, pos.y, 0, 75, CalBlock(i1, i2), $FFFFFFFF, 20)
         else
-          DrawBPic(Rrole[Brole[bnum].rnum].HeadNum * 4 + Brole[bnum].Face + BEGIN_BATTLE_ROLE_PIC,
+          DrawBRolePic(rnum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
             pos.x, pos.y, 0, 75, CalBlock(i1, i2), 0, 0);
-
       end;
     end;
   DrawProgress;

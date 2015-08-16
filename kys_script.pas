@@ -155,6 +155,7 @@ function EatOneItemScript(L: Plua_state): integer; cdecl;
 function SelectOneTeamMemberScript(L: Plua_state): integer; cdecl;
 
 function TalkMenu(L: Plua_state): integer; cdecl;
+function AskTrainHero(L: Plua_state): integer; cdecl;
 
 implementation
 
@@ -334,6 +335,7 @@ begin
   lua_register(Lua_script, 'eatoneitem', EatOneItemScript);
   lua_register(Lua_script, 'selectoneteammember', SelectOneTeamMemberScript);
   lua_register(Lua_script, 'talkmenu', TalkMenu);
+  lua_register(Lua_script, 'asktrainhero', AskTrainHero);
 
 end;
 
@@ -1761,6 +1763,23 @@ begin
   ShowTalkStatus(rnum, CENTER_X - 60, 50);
   lua_pushnumber(L, CommonScrollMenu(CENTER_X - FONT_WIDTH, 203 + VERTICAL_SPACING, FONT_WIDTH * 2, 3, 6, menuString));
   Result := 1;
+end;
+
+//询问是否训练住宿
+
+function AskTrainHero(L: Plua_state): integer; cdecl;
+var
+  menu: integer;
+  menuString: array[0..2] of WideString;
+begin
+  //setlength(menustring, 3);
+  menuString[0] := (' 否');
+  menuString[1] := (' 是');
+  menuString[2] := ('是否要练武功？');
+  DrawTextWithRect(screen, @menuString[2][1], CENTER_X - 75, CENTER_Y - 85, 150, ColColor(5), ColColor(7));
+  lua_pushnumber(L, CommonMenu2(CENTER_X - 49, CENTER_Y - 50, 98, menuString));
+  Result := 1;
+
 end;
 
 end.

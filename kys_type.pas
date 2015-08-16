@@ -346,12 +346,15 @@ var
   BlockScreen: TPosition;
   //场景和战场的遮挡信息, 前者不会记录地板数据, 该值实际由绘图顺序决定
 
-  MPicAmount, SPicAmount, BPicAmount, EPicAmount, CPicAmount, FPicAmount, HPicAmount: integer;
+  MPicAmount, SPicAmount, BPicAmount, BRolePicAmount, EPicAmount, CPicAmount, FPicAmount, HPicAmount: integer;
+  BRolePicCount: array of integer;
 
   //以下是各类贴图内容与索引
   //云的贴图内容及索引
   MPic, SPic, WPic, EPic, FPic, HPic, CPic, KDef, TDef: TByteArray;
   MIdx, SIdx, WIdx, EIdx, Fidx, HIdx, CIdx, KIdx, TIdx: TIntArray;
+  WRolePic: array of TByteArray;
+  WRoleIdx: array of TIntArray;
 
   MPNGTile: TSurfaceArray;
   SPNGTile: TSurfaceArray;

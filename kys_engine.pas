@@ -500,6 +500,7 @@ end;}
 procedure ReadTiles;
 var
   i: integer;
+  filename: string;
 begin
   if PNG_TILE = 0 then
   begin
@@ -507,11 +508,19 @@ begin
       writeln('Reading idx and grp files...');
     MPicAmount := LoadIdxGrp('resource/mmap.idx', 'resource/mmap.grp', MIdx, MPic);
     SPicAmount := LoadIdxGrp('resource/sdx', 'resource/smp', SIdx, SPic);
-    BPicAmount := LoadIdxGrp('resource/wdx', 'resource/wmp', WIdx, WPic);
+    BPicAmount := LoadIdxGrp('resource/sdx', 'resource/smp', WIdx, WPic);
     EPicAmount := LoadIdxGrp('resource/eft.idx', 'resource/eft.grp', EIdx, EPic);
     //LoadIdxGrp('resource/hdgrp.idx', 'resource/hdgrp.grp', HIdx, HPic);
     CPicAmount := LoadIdxGrp('resource/cloud.idx', 'resource/cloud.grp', CIdx, CPic);
     HPicAmount := LoadIdxGrp('resource/hdgrp.idx', 'resource/hdgrp.grp', HIdx, HPic);
+    setlength(BRolePicCount, 110);
+    setLength(WRoleIdx, 110);
+    setLength(WRolePic, 110);
+    for i := 0 to 109 do
+    begin
+      filename := formatfloat('fight/fight000', i);
+      BRolePicCount[i] := LoadIdxGrp(filename + '.idx', filename + '.grp', WRoleIdx[i], WRolePic[i]);
+    end;
   end;
 
   if PNG_TILE > 0 then
