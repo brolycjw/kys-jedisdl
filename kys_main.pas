@@ -98,6 +98,9 @@ procedure MenuEsc;
 procedure ShowMenu(menu: integer);
 procedure MenuMedcine;
 procedure MenuMedPoison;
+procedure MenuLearn(rnum: integer);
+function SelectLearnType(x, y: integer): integer;
+function SelectLearnMagic(magictype, x, y: integer): integer;
 function MenuItem: boolean;
 function ReadItemList(ItemType: integer): integer;
 procedure ShowMenuItem(row, col, x, y, atlu: integer);
@@ -108,6 +111,7 @@ procedure MenuStatus;
 procedure ShowStatusByTeam(tnum: integer);
 procedure ShowStatus(rnum: integer); overload;
 procedure ShowStatus(rnum, x, y, select: integer); overload;
+procedure ShowStatus(rnum, x, y, select: integer; refresh: boolean); overload;
 procedure ShowSimpleStatus(rnum, x, y: integer);
 procedure ShowTalkStatus(rnum, x, y: integer);
 procedure MenuLeave;
@@ -959,6 +963,9 @@ begin
   FileRead(grp, Rshop[0], len - WeiShopOffset);
   FileClose(idx);
   FileClose(grp);
+
+  MagicAmount := (NeigongOffset - MagicOffset) div 136;
+  NeigongAmount := (WeiShopOffset - NeigongOffset) div 22;
 
   //初始化入口
 
@@ -3159,6 +3166,63 @@ begin
 
 end;
 
+//修煉武功内功
+
+procedure MenuLearn(rnum: integer);
+var
+  menu, menu2: integer;
+  str: WideString;
+begin
+  str := ('修煉種類');
+  Redraw;
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+  DrawTextWithRect(screen, @str[1], 10, 10, 87, ColColor($21), ColColor($23));
+  menu := SelectLearnType(10, 45);
+
+  if menu >= 0 then
+  begin
+    if menu > 0 then
+    begin
+      menu2 := SelectLearnMagic(menu, 107, 45);
+    end;
+  end;
+end;
+
+function SelectLearnType(x, y: integer): integer;
+var
+  i: integer;
+  menuString: array of WideString;
+begin
+  setlength(menuString, 5);
+  menuString[0] := ('内功心法');
+  menuString[1] := ('拳掌武功');
+  menuString[2] := ('劍系武功');
+  menuString[3] := ('刀系武功');
+  menuString[4] := ('特殊武功');
+  Result := CommonMenu(x, y, 87, 4, menuString);
+end;
+
+function SelectLearnMagic(magictype, x, y: integer): integer;
+var
+  i, amount: integer;
+  magicnumArray: array of integer;
+  menuString: array of WideString;
+begin
+  setlength(magicnumArray, MagicAmount);
+  setlength(menuString, MagicAmount);
+  amount := 0;
+  for i := 0 to MagicAmount - 1 do
+  begin
+    if (RMagic[i].MagicType = magictype) and (RMagic[i].CanLearn > 0) then
+    begin
+      menuString[amount] := Big5ToUnicode(@RMagic[i].Name);
+      magicnumArray[amount] := i;
+      amount := amount + 1;
+    end;
+  end;
+  Result := magicnumArray[CommonScrollMenu(x, y, 108, amount - 1, 16, menuString)] - 1;
+end;
+
 //物品选单
 
 function MenuItem: boolean;
@@ -3959,11 +4023,10 @@ var
   menu, amount, i: integer;
   menuString, menuEngString: array of WideString;
 begin
-  str := ('查看隊員狀態');
+
   Redraw;
   RecordFreshScreen(0, 0, screen.w, screen.h);
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
-  DrawTextWithRect(screen, @str[1], 10, 10, 132, ColColor($21), ColColor($23));
   setlength(menuString, 6);
   setlength(menuEngString, 0);
   amount := 0;
@@ -3977,7 +4040,8 @@ begin
     end;
   end;
 
-  menu := CommonMenu(10, 45, 85, amount - 1, 0, menuString, menuEngString, @ShowStatusByTeam);
+  //menu := CommonMenu(10, 45, 85, amount - 1, 0, menuString, menuEngString, @ShowStatusByTeam);
+  ShowStatusByTeam(0);
   Redraw;
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
   //menu := SelectOneTeamMember(27, 65, '%3d', 15, 0);
@@ -3995,10 +4059,14 @@ end;
 
 procedure ShowStatusByTeam(tnum: integer);
 var
-  x, y, prevselect, curselect: integer;
+  teamx, teamy, ngx, ngy, learnx, learny, prevselect, curselect: integer;
 begin
-  x := 460;
-  y := 305;
+  teamx := 10;
+  teamy := 45;
+  ngx := 460;
+  ngy := 305;
+  learnx := 280;
+  learny := 285;
   curselect := -1;
   if TeamList[tnum] >= 0 then
   begin
@@ -4007,16 +4075,44 @@ begin
     begin
       CheckBasicEvent;
       case event.type_ of
+        SDL_KEYUP:
+        begin
+          if (event.key.keysym.sym = SDLK_ESCAPE) then
+          begin
+            break;
+          end;
+        end;
         SDL_MOUSEBUTTONUP:
         begin
           if (event.button.button = SDL_BUTTON_LEFT) then
           begin
-            if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
+            // 隊友範圍
+            if (round(event.button.x / (RESOLUTIONX / screen.w)) >= teamx) and
+              (round(event.button.x / (RESOLUTIONX / screen.w)) < teamx + 80) and
+              (round(event.button.y / (RESOLUTIONY / screen.h)) > teamy) and
+              (round(event.button.y / (RESOLUTIONY / screen.h)) < teamy + 105) then
+            begin
+              if Teamlist[curselect] >= 0 then
+              begin
+                tnum := curselect;
+                ShowStatus(TeamList[tnum], 100, 45, curselect, true);
+              end;
+            end
+            // 修煉範圍
+            else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= learnx) and
+             (round(event.button.x / (RESOLUTIONX / screen.w)) < learnx + 80) and
+             (round(event.button.y / (RESOLUTIONY / screen.h)) > learny) and
+             (round(event.button.y / (RESOLUTIONY / screen.h)) < learny + 20) then
+            begin
+              MenuLearn(TeamList[tnum]);
+            end
+            // 内功範圍
+            else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= ngx) and
               (round(event.button.x / (RESOLUTIONX / screen.w)) < 625) and
-              (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
+              (round(event.button.y / (RESOLUTIONY / screen.h)) > ngy) and
               (round(event.button.y / (RESOLUTIONY / screen.h)) < 417) then
             begin
-              Rrole[TeamList[tnum]].ChanneledNeigong := curselect;
+              Rrole[TeamList[tnum]].ChanneledNeigong := curselect - 10;
               ShowStatus(TeamList[tnum], 100, 45, curselect);
             end;
           end;
@@ -4024,12 +4120,13 @@ begin
         SDL_MOUSEMOTION:
         begin
           prevselect := curselect;
-          if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
-            (round(event.button.x / (RESOLUTIONX / screen.w)) < 625) and
-            (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
-            (round(event.button.y / (RESOLUTIONY / screen.h)) < 417) then
+          // 隊友範圍
+          if (round(event.button.x / (RESOLUTIONX / screen.w)) >= teamx) and
+            (round(event.button.x / (RESOLUTIONX / screen.w)) < teamx + 80) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) > teamy) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < teamy + 105) then
           begin
-            curselect := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div 22;
+            curselect := (round(event.button.y / (RESOLUTIONY / screen.h)) - teamy - 2) div 22;
             if curselect > 4 then
               curselect := 4;
             if curselect < 0 then
@@ -4039,7 +4136,37 @@ begin
               ShowStatus(TeamList[tnum], 100, 45, curselect);
             end;
           end
+           // 修煉範圍
+          else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= learnx) and
+            (round(event.button.x / (RESOLUTIONX / screen.w)) < learnx + 80) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) > learny) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < learny + 20) then
+          begin
+              curselect := 5;
+              if prevselect <> curselect then
+              begin
+                ShowStatus(TeamList[tnum], 100, 45, curselect);
+              end;
+          end
+          // 内功範圍
+          else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= ngx) and
+            (round(event.button.x / (RESOLUTIONX / screen.w)) < 625) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) > ngy) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < 417) then
+          begin
+            curselect := (round(event.button.y / (RESOLUTIONY / screen.h)) - ngy - 2) div 22;
+            curselect := curselect + 10;
+            if curselect > 14 then
+              curselect := 14;
+            if curselect < 10 then
+              curselect := 10;
+            if prevselect <> curselect then
+            begin
+              ShowStatus(TeamList[tnum], 100, 45, curselect);
+            end;
+          end
           else
+          // 範圍外
           begin
             curselect := -1;
             if prevselect <> -1 then
@@ -4049,8 +4176,8 @@ begin
       end;
     end;
     //清空键盘键和鼠标键值, 避免影响其余部分
-    //event.key.keysym.sym := 0;
-    //event.button.button := 0;
+    event.key.keysym.sym := 0;
+    event.button.button := 0;
   end;
 end;
 
@@ -4060,15 +4187,26 @@ begin
 end;
 
 procedure ShowStatus(rnum, x, y, select: integer); overload;
+begin
+  ShowStatus(rnum, x, y, select, false);
+end;
+
+procedure ShowStatus(rnum, x, y, select: integer; refresh: boolean); overload;
 var
-  i, magicnum, mlevel, neigongnum, neigonglevel, needexp: integer;
+  i, teamcount, magicnum, mlevel, neigongnum, neigonglevel, needexp: integer;
   p: array[0..10] of integer;
   addatk, adddef, addspeed: integer;
+  teamnames: array[0..5] of WideString;
   str: WideString;
   strs: array[0..22] of WideString;
   color1, color2: uint32;
   Name: WideString;
 begin
+  if refresh then
+  begin
+    Redraw;
+    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+  end;
   strs[0] := ('等級');
   strs[1] := ('生命');
   strs[2] := ('內力');
@@ -4108,14 +4246,42 @@ begin
   if where <= 2 then
     LoadFreshScreen(0, 0, screen.w, screen.h);
 
-  DrawRectangle(screen, x, y, 525, 372, 0, ColColor(255), 50);
+  str := ('查看隊員狀態');
+  DrawTextWithRect(screen, @str[1], 10, 10, 132, ColColor($21), ColColor($23));
 
+  //顯示隊友選項
+  teamcount := 0;
+  for i := 0 to 5 do
+  begin
+    if Teamlist[i] >= 0 then
+    begin
+      teamnames[i] := Big5ToUnicode(@Rrole[Teamlist[i]].Name);
+      teamcount := teamcount + 1;
+    end;
+  end;
+  DrawRectangle(screen, 10, 45, 85, 4 + teamcount * 21, 0, ColColor(255), 50);
+  for i := 0 to teamcount do
+  begin
+    if (i = select)or (Teamlist[i] = rnum) then
+    begin
+      color1 := ColColor($64);
+      color2 := ColColor($66);
+    end
+    else
+    begin
+      color1 := ColColor($5);
+      color2 := ColColor($7);
+    end;
+    DrawShadowText(screen, @teamnames[i, 1], 12, 47 + i * 21, color1, color2);
+  end;
+
+  DrawRectangle(screen, x, y, 525, 372, 0, ColColor(255), 50);
   //显示头像
   DrawHeadPic(Rrole[rnum].HeadNum, x + 60, y + 80);
   //显示姓名
   Name := Big5ToUnicode(@Rrole[rnum].Name, 5);
   DrawShadowText(screen, @Name[1], x + 88 - DrawLength(Name) * 5, y + 85,
-    ColColor($66), ColColor($63));
+    ColColor($64), ColColor($66));
   //显示所需字符
   for i := 0 to 5 do
     DrawShadowText(screen, @strs[i, 1], x + 10, y + 110 + 21 * i, ColColor($21), ColColor($23));
@@ -4272,7 +4438,17 @@ begin
 
   //装备, 秘笈
   DrawShadowText(screen, @strs[17, 1], x + 10, y + 240, ColColor($21), ColColor($23));
-  DrawShadowText(screen, @strs[18, 1], x + 180, y + 240, ColColor($21), ColColor($23));
+  if select = 5 then
+  begin
+    color1 := ColColor($64);
+    color2 := ColColor($66);
+  end
+  else
+  begin
+    color1 := ColColor($21);
+    color2 := ColColor($23);
+  end;
+  DrawShadowText(screen, @strs[18, 1], x + 180, y + 240, color1, color2);
   if Rrole[rnum].Equip[0] >= 0 then
     DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[0]].Name, x + 20, y + 261, ColColor($5), ColColor($7));
   if Rrole[rnum].Equip[1] >= 0 then
@@ -4315,7 +4491,7 @@ begin
         color1 := ColColor($5);
         color2 := ColColor($7);
       end;
-      if i = select then
+      if (i = select - 10) then
       begin
         color1 := ColColor($64);
         color2 := ColColor($66);
@@ -4325,7 +4501,7 @@ begin
       DrawEngShadowText(screen, @str[1], x + 480, y + 261 + 21 * i, ColColor($64), ColColor($66));
     end;
   end;
-  SDL_UpdateRect2(screen, x, y, 536, 373);
+  SDL_UpdateRect2(screen, 10, 0, 626, 418);
 end;
 
 //显示简单状态(x, y表示位置)

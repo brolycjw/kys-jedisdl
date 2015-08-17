@@ -104,7 +104,8 @@ type
     case TCallType of
       Element: (ListNum: smallint;
         Name: array[0..9] of char;
-        UnKnow: array[0..4] of smallint;
+        CanLearn: smallint;
+        UnKnow: array[0..3] of smallint;
         SoundNum, MagicType, AmiNum, HurtType, AttAreaType, NeedMP, Poison: smallint;
         Attack, MoveDistance, AttDistance, AddMP, HurtMP: array[0..9] of smallint);
       Address: (Data: array[0..67] of smallint);
@@ -114,7 +115,8 @@ type
     case TCallType of
       Element: (ListNum: smallint;
         Name: array[0..9] of char;
-        UnKnow: array[0..4] of smallint);
+        CanLearn: smallint;
+        UnKnow: array[0..3] of smallint);
       Address: (Data: array[0..10] of smallint);
   end;
 
@@ -456,6 +458,8 @@ var
   //当前人物坐标, 选择目标的坐标
   Bstatus: integer;
   //战斗状态, 0-继续, 1-胜利, 2-失败
+  MagicAmount, NeigongAmount: integer;
+  // 武功總數，内功總數
 
   //寻路使用的变量表
   linex, liney: array[0..480 * 480 - 1] of smallint;

@@ -156,6 +156,7 @@ function SelectOneTeamMemberScript(L: Plua_state): integer; cdecl;
 
 function TalkMenu(L: Plua_state): integer; cdecl;
 function AskTrainHero(L: Plua_state): integer; cdecl;
+function AcquireMagic(L: Plua_state): integer; cdecl;
 
 implementation
 
@@ -336,6 +337,7 @@ begin
   lua_register(Lua_script, 'selectoneteammember', SelectOneTeamMemberScript);
   lua_register(Lua_script, 'talkmenu', TalkMenu);
   lua_register(Lua_script, 'asktrainhero', AskTrainHero);
+  lua_register(Lua_script, 'acquiremagic', AcquireMagic);
 
 end;
 
@@ -1765,7 +1767,7 @@ begin
   Result := 1;
 end;
 
-//询问是否训练住宿
+//询问是否训练
 
 function AskTrainHero(L: Plua_state): integer; cdecl;
 var
@@ -1779,7 +1781,16 @@ begin
   DrawTextWithRect(screen, @menuString[2][1], CENTER_X - 75, CENTER_Y - 85, 150, ColColor(5), ColColor(7));
   lua_pushnumber(L, CommonMenu2(CENTER_X - 49, CENTER_Y - 50, 98, menuString));
   Result := 1;
+end;
 
+// 獲取武功
+function AcquireMagic(L: Plua_state): integer; cdecl;
+var
+  magicnum, level: integer;
+begin
+  magicnum := floor(lua_tonumber(L, -2));
+  level := floor(lua_tonumber(L, -1));
+  RMagic[magicnum].CanLearn := level;
 end;
 
 end.
