@@ -103,21 +103,47 @@ type
   TMagic = record
     case TCallType of
       Element: (ListNum: smallint;
-        Name: array[0..9] of char;
-        CanLearn: smallint;
+        Name: array[0..19] of char;
+        Introduction: array[0..29] of char;
+        CanLearn, MagicType: smallint;
+        Styles: array[0..4] of smallint;
+        AddCurrentHP, AddMaxHP, AddPoi, AddPhyPower, ChangeMPType, AddCurrentMP, AddMaxMP: smallint;
+        AddAttack, AddSpeed, AddDefence, AddMedcine, AddUsePoi, AddMedPoi, AddDefPoi: smallint;
+        AddFist, AddSword, AddKnife, AddUnusual, AddHidWeapon, AddKnowledge, AddEthics,
+        AddAttTwice, AddAttPoi: smallint;
+        OnlyPracRole, NeedMPType, NeedMaxMP, NeedAttack, NeedSpeed, NeedUsePoi, NeedMedcine, NeedMedPoi: smallint;
+        NeedFist, NeedSword, NeedKnife, NeedUnusual, NeedHidWeapon, NeedAptitude: smallint;
+        NeedExp: smallint);
+      Address: (Data: array[0..69] of smallint);
+  end;
+
+  TStyles = record
+    case TCallType of
+      Element: (ListNum: smallint;
+        Name: array[0..19] of char;
+        Introduction: array[0..29] of char;
+        ReqLevel: smallint;
         UnKnow: array[0..3] of smallint;
         SoundNum, MagicType, AmiNum, HurtType, AttAreaType, NeedMP, Poison: smallint;
         Attack, MoveDistance, AttDistance, AddMP, HurtMP: array[0..9] of smallint);
-      Address: (Data: array[0..67] of smallint);
+      Address: (Data: array[0..87] of smallint);
   end;
 
   TNeigong = record
     case TCallType of
       Element: (ListNum: smallint;
-        Name: array[0..9] of char;
+        Name: array[0..19] of char;
+        Introduction: array[0..29] of char;
         CanLearn: smallint;
-        UnKnow: array[0..3] of smallint);
-      Address: (Data: array[0..10] of smallint);
+        UnKnow: array[0..3] of smallint;
+        AddCurrentHP, AddMaxHP, AddPoi, AddPhyPower, ChangeMPType, AddCurrentMP, AddMaxMP: smallint;
+        AddAttack, AddSpeed, AddDefence, AddMedcine, AddUsePoi, AddMedPoi, AddDefPoi: smallint;
+        AddFist, AddSword, AddKnife, AddUnusual, AddHidWeapon, AddKnowledge, AddEthics,
+        AddAttTwice, AddAttPoi: smallint;
+        OnlyPracRole, NeedMPType, NeedMaxMP, NeedAttack, NeedSpeed, NeedUsePoi, NeedMedcine, NeedMedPoi: smallint;
+        NeedFist, NeedSword, NeedKnife, NeedUnusual, NeedHidWeapon, NeedAptitude: smallint;
+        NeedExp: smallint);
+      Address: (Data: array[0..67] of smallint);
   end;
 
   TShop = record
@@ -244,8 +270,8 @@ var
   CENTER_Y: integer = 220;
   HORIZONTAL_SPACING: integer = 3;
   VERTICAL_SPACING: integer = 3;
-  FONT_WIDTH: integer = 23;
-  FONT_HEIGHT: integer = 23;
+  FONT_WIDTH: integer = 22;
+  FONT_HEIGHT: integer = 22;
 
   AppPath: string; //程序的路径
 
@@ -297,10 +323,11 @@ var
   InShip, Useless1, Mx, My, Sx, Sy, MFace, ShipX, ShipY, ShipX1, ShipY1, ShipFace: smallint;
   TeamList: array[0..5] of smallint;
   RItemList: array of TItemList;
-  Rrole: array[0..2031] of TRole;
-  Ritem: array[0..724] of TItem;
+  RRole: array[0..2031] of TRole;
+  RItem: array[0..724] of TItem;
   Rscence: array[0..200] of TScence;
-  Rmagic: array[0..998] of TMagic;
+  RMagic: array[0..998] of TMagic;
+  RStyles: array[0..1499] of TStyles;
   RNeigong: array[0..100] of TNeigong;
   RShop: array[0..10] of TShop;
   //R文件数据, 均远大于原有容量
@@ -458,7 +485,7 @@ var
   //当前人物坐标, 选择目标的坐标
   Bstatus: integer;
   //战斗状态, 0-继续, 1-胜利, 2-失败
-  MagicAmount, NeigongAmount: integer;
+  MagicAmount, StylesAmount, NeigongAmount: integer;
   // 武功總數，内功總數
 
   //寻路使用的变量表

@@ -45,17 +45,18 @@ function SelectDirector(bnum, step: integer): boolean;
 procedure SeekPath2(x, y, step, myteam, mode: integer);
 procedure CalCanSelect(bnum, mode, step: integer);
 procedure Attack(bnum: integer);
-procedure AttackAction(bnum, i, mnum, level: integer); overload;
-procedure AttackAction(bnum, mnum, level: integer); overload;
+procedure AttackAction(bnum, i, snum, level: integer); overload;
+procedure AttackAction(bnum, snum, level: integer); overload;
 procedure ShowMagicName(mnum: integer; mode: integer = 0);
 function SelectMagic(rnum: integer): integer;
+function SelectStyle(rnum, mpos: integer): integer;
 procedure ShowMagicMenu(MenuStatus, menu, max: integer; menuString, menuEngString: array of WideString);
 procedure SetAminationPosition(mode, step: integer; range: integer = 0); overload;
 procedure SetAminationPosition(Bx, By, Ax, Ay, mode, step: integer; range: integer = 0); overload;
 procedure PlayMagicAmination(bnum, enum: integer; ForTeam: integer = 0; mode: integer = 0);
-procedure CalHurtRole(bnum, mnum, level: integer);
-function CalHurtValue(bnum1, bnum2, mnum, level: integer): integer;
-function CalHurtValue2(bnum1, bnum2, mnum, level: integer): integer;
+procedure CalHurtRole(bnum, snum, level: integer);
+function CalHurtValue(bnum1, bnum2, snum, level: integer): integer;
+function CalHurtValue2(bnum1, bnum2, snum, level: integer): integer;
 procedure ShowHurtValue(mode: integer);
 procedure SelectModeColor(mode: integer; var color1, color2: uint32; var str: string; trans: integer = 0);
 procedure CalPoiHurtLife;
@@ -69,7 +70,7 @@ procedure CheckBook;
 function CalRNum(team: integer): integer;
 procedure BattleMenuItem(bnum: integer);
 procedure UsePoison(bnum: integer);
-procedure PlayActionAmination(bnum, mode: integer; mnum: integer = -1);
+procedure PlayActionAmination(bnum, mode: integer; snum: integer = -1);
 procedure Medcine(bnum: integer);
 procedure MedPoison(bnum: integer);
 procedure UseHiddenWeapon(bnum, inum: integer);
@@ -79,11 +80,11 @@ function TeamModeMenu: boolean;
 procedure AutoBattle(bnum: integer);
 procedure AutoUseItem(bnum, list: integer);
 
-procedure TryMoveAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, mnum, level: integer);
-procedure calline(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
-procedure CalArea(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
-procedure CalPoint(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
-procedure calcross(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
+procedure TryMoveAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, snum, level: integer);
+procedure calline(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
+procedure CalArea(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
+procedure CalPoint(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
+procedure calcross(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
 procedure NearestMove(var Mx1, My1: integer; bnum: integer);
 procedure NearestMoveByPro(var Mx1, My1, Ax1, Ay1: integer; bnum, TeamMate, KeepDis, Prolist, MaxMinPro: integer;
   mode: integer);
@@ -107,6 +108,7 @@ var
   i, j, num, SelectTeamList, x, y, PreMusic: integer;
   path: string;
 begin
+  SEMIREAL := 0;
   Bstatus := 0;
   CurrentBattle := battlenum;
   BattleRound := 1;
@@ -1729,7 +1731,7 @@ end;
 
 procedure Attack(bnum: integer);
 var
-  rnum, i, mnum, level, step, i1: integer;
+  rnum, i, mnum, smenu, snum, level, step, i1: integer;
 begin
   rnum := Brole[bnum].rnum;
 
@@ -1739,36 +1741,35 @@ begin
     if i < 0 then
       break;
     mnum := Rrole[rnum].Magic[i];
-    level := Rrole[rnum].MagLevel[i] div 100 + 1;
+    level := Rrole[rnum].MagLevel[i];
 
-    if i >= 0 then
+    smenu := SelectStyle(rnum, i);
+    if smenu < 0 then
+      break;
+    snum := RMagic[mnum].Styles[smenu];
+
       //依据攻击范围进一步选择
-      case Rmagic[mnum].AttAreaType of
+      case RStyles[snum].AttAreaType of
         0, 3:
         begin
-          //CalCanSelect(bnum, 1);
-          step := Rmagic[mnum].MoveDistance[level - 1];
+          step := RStyles[snum].MoveDistance[level - 1];
           CalCanSelect(bnum, 1, step);
-          if SelectAim(bnum, step, Rmagic[mnum].AttAreaType, Rmagic[mnum].AttDistance[level - 1]) then
+          if SelectAim(bnum, step, RStyles[snum].AttAreaType, RStyles[snum].AttDistance[level - 1]) then
           begin
-            //SetAminationPosition(Rmagic[mnum].AttAreaType, Rmagic[mnum].MoveDistance[level - 1],
-            //Rmagic[mnum].AttDistance[level - 1]);
             Brole[bnum].Acted := 1;
           end;
         end;
         1:
         begin
-          if SelectDirector(bnum, Rmagic[mnum].MoveDistance[level - 1]) then
+          if SelectDirector(bnum, RStyles[snum].MoveDistance[level - 1]) then
           begin
-            //SetAminationPosition(Rmagic[mnum].AttAreaType, Rmagic[mnum].MoveDistance[level - 1],
-            //Rmagic[mnum].AttDistance[level - 1]);
             Brole[bnum].Acted := 1;
           end;
         end;
         2:
         begin
-          SetAminationPosition(Rmagic[mnum].AttAreaType, Rmagic[mnum].MoveDistance[level - 1],
-            Rmagic[mnum].AttDistance[level - 1]);
+          SetAminationPosition(RStyles[snum].AttAreaType, RStyles[snum].MoveDistance[level - 1],
+            RStyles[snum].AttDistance[level - 1]);
           DrawBFieldWithCursor(-1);
           SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
           i1 := 0;
@@ -1786,39 +1787,30 @@ begin
       break;
   end;
   //如果行动成功, 武功等级增加, 播放效果
-  AttackAction(bnum, i, mnum, level);
+  AttackAction(bnum, i, snum, level);
 
 end;
 
-procedure AttackAction(bnum, i, mnum, level: integer); overload;
+procedure AttackAction(bnum, i, snum, level: integer); overload;
 var
   rnum, i1: integer;
 begin
   rnum := Brole[bnum].rnum;
   if Brole[bnum].Acted = 1 then
   begin
-    for i1 := 0 to sign(Rrole[rnum].AttTwice) do
-    begin
-      Rrole[rnum].MagLevel[i] := Rrole[rnum].MagLevel[i] + random(2) + 1;
-      if Rrole[rnum].MagLevel[i] > 999 then
-        Rrole[rnum].MagLevel[i] := 999;
-      if Rmagic[mnum].UnKnow[4] > 0 then
-        CallEvent(Rmagic[mnum].UnKnow[4])
-      else
-        AttackAction(bnum, mnum, level);
-    end;
+    AttackAction(bnum, snum, level);
   end;
 end;
 
 //攻击效果, 保持与之前的兼容不修改名字
 
-procedure AttackAction(bnum, mnum, level: integer); overload;
+procedure AttackAction(bnum, snum, level: integer); overload;
 begin
-  ShowMagicName(mnum);
-  PlayActionAmination(bnum, Rmagic[mnum].MagicType, mnum);
-  PlayMagicAmination(bnum, Rmagic[mnum].AmiNum); //武功效果
-  CalHurtRole(bnum, mnum, level); //计算被打到的人物
-  ShowHurtValue(Rmagic[mnum].HurtType); //显示数字
+  //ShowMagicName(mnum);
+  PlayActionAmination(bnum, RStyles[snum].MagicType, snum);
+  PlayMagicAmination(bnum, RStyles[snum].AmiNum); //武功效果
+  CalHurtRole(bnum, snum, level); //计算被打到的人物
+  ShowHurtValue(RStyles[snum].HurtType); //显示数字
 
 end;
 
@@ -1858,7 +1850,7 @@ begin
     begin
       MenuStatus := MenuStatus or (1 shl i);
       menuString[i] := Big5ToUnicode(@Rmagic[Rrole[rnum].Magic[i]].Name);
-      menuEngString[i] := format('%3d', [Rrole[rnum].MagLevel[i] div 100 + 1]);
+      menuEngString[i] := format('%3d', [Rrole[rnum].MagLevel[i]]);
       max := max + 1;
     end;
   end;
@@ -1947,6 +1939,32 @@ begin
     Result := i;
   end;
 
+end;
+
+// 顯示招式選單
+
+function SelectStyle(rnum, mpos: integer): integer;
+var
+  i, max, mnum, snum: integer;
+  menuString: array of WideString;
+begin
+  SetLength(MenuString, 5);
+  mnum := RRole[rnum].Magic[mpos];
+  max := 0;
+  for i := 0 to 4 do
+  begin
+    snum := RMagic[mnum].Styles[i];
+    if IsConsole then
+      writeln('snum: ', snum);
+    if snum <= 0 then
+       break;
+    if RRole[rnum].MagLevel[mpos] >= RStyles[snum].ReqLevel then
+    begin
+      menuString[max] := Big5ToUnicode(@RStyles[snum].Name);
+      max := max + 1;
+    end;
+  end;
+  Result := CommonMenu(200, 60, 167, max - 1, menuString);
 end;
 
 //显示武功选单
@@ -2099,26 +2117,26 @@ end;
 
 //判断是否有非行动方角色在攻击范围之内
 
-procedure CalHurtRole(bnum, mnum, level: integer);
+procedure CalHurtRole(bnum, snum, level: integer);
 var
   i, rnum, hurt, addpoi, mp: integer;
 begin
   rnum := Brole[bnum].rnum;
   Rrole[rnum].PhyPower := Rrole[rnum].PhyPower - 3;
-  if Rrole[rnum].CurrentMP < Rmagic[mnum].NeedMP * ((level + 1) div 2) then
-    level := Rrole[rnum].CurrentMP div Rmagic[mnum].NeedMP * 2;
+  if Rrole[rnum].CurrentMP < RStyles[snum].NeedMP * ((level + 1) div 2) then
+    level := Rrole[rnum].CurrentMP div RStyles[snum].NeedMP * 2;
   if level > 10 then
     level := 10;
-  Rrole[rnum].CurrentMP := Rrole[rnum].CurrentMP - Rmagic[mnum].NeedMP * ((level + 1) div 2);
+  Rrole[rnum].CurrentMP := Rrole[rnum].CurrentMP - RStyles[snum].NeedMP * ((level + 1) div 2);
   for i := 0 to BRoleAmount - 1 do
   begin
     Brole[i].ShowNumber := -1;
     if (Bfield[4, Brole[i].X, Brole[i].Y] <> 0) and (Brole[bnum].Team <> Brole[i].Team) and (Brole[i].Dead = 0) then
     begin
       //生命伤害
-      if (Rmagic[mnum].HurtType = 0) then
+      if (RStyles[snum].HurtType = 0) then
       begin
-        hurt := CalHurtValue(bnum, i, mnum, level);
+        hurt := CalHurtValue(bnum, i, snum, level);
         Brole[i].ShowNumber := hurt;
         //受伤
         Rrole[Brole[i].rnum].CurrentHP := Rrole[Brole[i].rnum].CurrentHP - hurt;
@@ -2132,9 +2150,9 @@ begin
           Brole[bnum].ExpGot := 32767;
       end;
       //内力伤害
-      if (Rmagic[mnum].HurtType = 1) then
+      if (RStyles[snum].HurtType = 1) then
       begin
-        hurt := Rmagic[mnum].HurtMP[level - 1] + random(5) - random(5);
+        hurt := RStyles[snum].HurtMP[level - 1] + random(5) - random(5);
         Brole[i].ShowNumber := hurt;
         Rrole[Brole[i].rnum].CurrentMP := Rrole[Brole[i].rnum].CurrentMP - hurt;
         if Rrole[Brole[i].rnum].CurrentMP <= 0 then
@@ -2149,7 +2167,7 @@ begin
           Rrole[rnum].CurrentMP := Rrole[rnum].MaxMP;
       end;
       //中毒
-      addpoi := Rrole[rnum].AttPoi div 5 + Rmagic[mnum].Poison * level div 2 *
+      addpoi := Rrole[rnum].AttPoi div 5 + RStyles[snum].Poison * level div 2 *
         (100 - Rrole[Brole[i].rnum].DefPoi) div 100;
       if addpoi + Rrole[Brole[i].rnum].Poison > 99 then
         addpoi := 99 - Rrole[Brole[i].rnum].Poison;
@@ -2165,7 +2183,7 @@ end;
 
 //计算伤害值, 第一公式如小于0则取一个随机数, 无第二公式
 
-function CalHurtValue(bnum1, bnum2, mnum, level: integer): integer;
+function CalHurtValue(bnum1, bnum2, snum, level: integer): integer;
 var
   i, rnum1, rnum2, mhurt, att, def, k1, k2, dis: integer;
 begin
@@ -2184,14 +2202,14 @@ begin
   rnum1 := Brole[bnum1].rnum;
   rnum2 := Brole[bnum2].rnum;
   if level > 0 then
-    mhurt := Rmagic[mnum].Attack[level - 1]
+    mhurt := RStyles[snum].Attack[level - 1]
   else
     mhurt := 0;
 
   att := Rrole[rnum1].Attack + k1 * 3 div 2 + mhurt div 3;
   def := Rrole[rnum2].Defence * 2 + k2 * 3;
 
-  case Rmagic[mnum].MagicType of
+  case RStyles[snum].MagicType of
     1:
     begin
       att := att + Rrole[rnum1].Fist;
@@ -2224,7 +2242,7 @@ begin
     att := att + Ritem[Rrole[rnum1].Equip[0]].AddAttack;
     for i := 0 to MAX_WEAPON_MATCH - 1 do
     begin
-      if (Rrole[rnum1].Equip[0] = matchlist[i, 0]) and (mnum = matchlist[i, 1]) then
+      if (Rrole[rnum1].Equip[0] = matchlist[i, 0]) and (snum = matchlist[i, 1]) then
       begin
         att := att + matchlist[i, 2] * 2 div 3;
         break;
@@ -2257,13 +2275,13 @@ end;
 
 //AI专用
 
-function CalHurtValue2(bnum1, bnum2, mnum, level: integer): integer;
+function CalHurtValue2(bnum1, bnum2, snum, level: integer): integer;
 begin
-  Result := CalHurtValue(bnum1, bnum2, mnum, level);
+  Result := CalHurtValue(bnum1, bnum2, snum, level);
   if Result >= Rrole[Brole[bnum2].rnum].CurrentHP then
     Result := Result * 3 div 2;
-  if Rmagic[mnum].HurtType = 1 then
-    Result := (Rmagic[mnum].HurtMP[level - 1] * 3) div 2;
+  if RStyles[snum].HurtType = 1 then
+    Result := (RStyles[snum].HurtMP[level - 1] * 3) div 2;
 end;
 
 //选择颜色
@@ -2646,7 +2664,7 @@ begin
         for i1 := 0 to 9 do
           if Rrole[rnum].Magic[i1] = mnum then
           begin
-            mlevel := Rrole[rnum].MagLevel[i1] div 100 + 1;
+            mlevel := Rrole[rnum].MagLevel[i1];
             break;
           end;
       p := 0;
@@ -2805,7 +2823,7 @@ end;
 
 //动作动画
 
-procedure PlayActionAmination(bnum, mode: integer; mnum: integer = -1);
+procedure PlayActionAmination(bnum, mode: integer; snum: integer = -1);
 var
   d1, d2, dm, rnum, i, beginpic, endpic, idx, grp, tnum, len, spic, Ax1, Ay1: integer;
   filename: string;
@@ -2860,14 +2878,14 @@ begin
     //LoadPNGTiles('resource/' + filename + '/', FPNGIndex, FPNGTile, 1);
 
     spic := beginpic + Rrole[rnum].SoundDealy[mode] - 1;
-    //PlaySound2(rmagic[mnum].SoundNum, 0);
+    //PlaySound2(RStyles[snum].SoundNum, 0);
     i := beginpic;
     while (SDL_PollEvent(@event) >= 0) do
     begin
       CheckBasicEvent;
       DrawBFieldWithAction(bnum, i);
-      if (i = spic) and (mnum >= 0) then
-        PlaySoundA(Rmagic[mnum].SoundNum, 0);
+      if (i = spic) and (snum >= 0) then
+        PlaySoundA(RStyles[snum].SoundNum, 0);
       SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
       SDL_Delay(BATTLE_SPEED);
       i := i + 1;
@@ -3339,8 +3357,8 @@ end;
 
 procedure AutoBattle(bnum: integer);
 var
-  i, p, temp, rnum, inum, eneamount, aim, mnum, level: integer;
-  i1, i2, step, step1, dis0, dis: integer;
+  i, p, temp, rnum, inum, eneamount, aim, mnum, snum, level: integer;
+  i1, j1, i2, step, step1, dis0, dis: integer;
   Bx1, By1, Ax1, Ay1, curBx1, curBy1, curAx1, curAy1, curMnum, curMaxHurt, curlevel, tempmaxhurt: integer;
   str: WideString;
 begin
@@ -3488,24 +3506,30 @@ begin
         mnum := Rrole[rnum].Magic[i1];
         if mnum > 0 then
         begin
-          level := Rrole[rnum].MagLevel[i1] div 100 + 1;
-          if Rrole[rnum].CurrentMP < Rmagic[mnum].NeedMP * ((level + 1) div 2) then
-            level := Rrole[rnum].CurrentMP div Rmagic[mnum].NeedMP * 2;
-          if level > 10 then
-            level := 10;
-          if level <= 0 then
-            level := 1;
-          TryMoveAttack(Bx1, By1, Ax1, Ay1, tempmaxhurt, bnum, mnum, level);
-          if tempmaxhurt > curMaxHurt then
+          level := Rrole[rnum].MagLevel[i1];
+          for j1 := 0 to 4 do
           begin
-            curBx1 := Bx1;
-            curBy1 := By1;
-            curAx1 := Ax1;
-            curAy1 := Ay1;
-            curMnum := mnum;
-            curlevel := level;
-            curMaxHurt := tempmaxhurt;
-            p := i1;
+            snum := RMagic[mnum].Styles[j1];
+            if level < RStyles[snum].ReqLevel then
+               continue;
+            if Rrole[rnum].CurrentMP < RStyles[snum].NeedMP * ((level + 1) div 2) then
+              level := Rrole[rnum].CurrentMP div RStyles[snum].NeedMP * 2;
+            if level > 10 then
+              level := 10;
+            if level <= 0 then
+              level := 1;
+            TryMoveAttack(Bx1, By1, Ax1, Ay1, tempmaxhurt, bnum, mnum, level);
+            if tempmaxhurt > curMaxHurt then
+            begin
+              curBx1 := Bx1;
+              curBy1 := By1;
+              curAx1 := Ax1;
+              curAy1 := Ay1;
+              curMnum := mnum;
+              curlevel := level;
+              curMaxHurt := tempmaxhurt;
+              p := i1;
+            end;
           end;
         end;
       end;
@@ -3520,8 +3544,8 @@ begin
         Ay := curAy1;
         mnum := curMnum;
         level := curlevel;
-        SetAminationPosition(Rmagic[mnum].AttAreaType, Rmagic[mnum].MoveDistance[level - 1],
-          Rmagic[mnum].AttDistance[level - 1]);
+        SetAminationPosition(RStyles[snum].AttAreaType, RStyles[snum].MoveDistance[level - 1],
+          RStyles[snum].AttDistance[level - 1]);
         Brole[bnum].Acted := 1;
         AttackAction(bnum, p, mnum, level);
       end;
@@ -3764,7 +3788,7 @@ begin
 
 end;
 
-procedure TryMoveAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, mnum, level: integer);
+procedure TryMoveAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, snum, level: integer);
 var
   curX, curY, curstep, nextX, nextY, dis, dis0, temphurt: integer;
   i, i1, i2, eneamount, aim: integer;
@@ -3778,10 +3802,10 @@ begin
   Ay1 := -1;
   tempmaxhurt := -1;
   FillChar(aimHurt[0, 0], sizeof(aimHurt), -1);
-  AttAreaType := Rmagic[mnum].AttAreaType;
-  distance := Rmagic[mnum].MoveDistance[level - 1];
-  range := Rmagic[mnum].AttDistance[level - 1];
-  AttAreaType := Rmagic[mnum].AttAreaType;
+  AttAreaType := RStyles[snum].AttAreaType;
+  distance := RStyles[snum].MoveDistance[level - 1];
+  range := RStyles[snum].AttDistance[level - 1];
+  AttAreaType := RStyles[snum].AttAreaType;
   myteam := Brole[bnum].Team;
 
   for curX := 0 to 63 do
@@ -3829,7 +3853,7 @@ begin
                   (((AttAreaType <> 3) and (Bfield[4, Brole[i].X, Brole[i].Y] > 0)) or
                   ((AttAreaType = 3) and (abs(i1 - Brole[i].X) <= range) and (abs(i2 - Brole[i].Y) <= range))) then
                 begin
-                  temphurt := temphurt + CalHurtValue2(bnum, i, mnum, level);
+                  temphurt := temphurt + CalHurtValue2(bnum, i, snum, level);
                 end;
               end;
               aimHurt[i1, i2] := temphurt;
@@ -3856,15 +3880,15 @@ end;
 
 //目标系点十菱, 原地系菱
 
-procedure CalPoint(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
+procedure CalPoint(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
 var
   i, j, k, m, n, tempX, tempY, temphurt, ebnum, ernum, tempHP: integer;
   distance, range, AttAreaType, myteam: integer;
 begin
-  distance := Rmagic[mnum].MoveDistance[level - 1];
-  range := Rmagic[mnum].AttDistance[level - 1];
+  distance := RStyles[snum].MoveDistance[level - 1];
+  range := RStyles[snum].AttDistance[level - 1];
   range := 0;
-  AttAreaType := Rmagic[mnum].AttAreaType;
+  AttAreaType := RStyles[snum].AttAreaType;
   myteam := Brole[bnum].Team;
 
   for i := curX - distance to curX + distance do
@@ -3881,7 +3905,7 @@ begin
           tempY := Brole[k].Y;
           if abs(tempX - i) + abs(tempY - j) <= range then
           begin
-            temphurt := temphurt + CalHurtValue2(bnum, k, mnum, level);
+            temphurt := temphurt + CalHurtValue2(bnum, k, snum, level);
           end;
         end;
       end;
@@ -3899,14 +3923,14 @@ end;
 
 //线型攻击的情况, 分四个方向考虑, 分别计算伤血量
 
-procedure calline(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
+procedure calline(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
 var
   i, tempX, tempY, ebnum, rnum, tempHP, temphurt: integer;
   distance, range, AttAreaType, myteam: integer;
 begin
-  distance := Rmagic[mnum].MoveDistance[level - 1];
-  range := Rmagic[mnum].AttDistance[level - 1];
-  AttAreaType := Rmagic[mnum].AttAreaType;
+  distance := RStyles[snum].MoveDistance[level - 1];
+  range := RStyles[snum].AttDistance[level - 1];
+  AttAreaType := RStyles[snum].AttAreaType;
   myteam := Brole[bnum].Team;
   temphurt := 0;
   for i := curX - 1 downto curX - distance do
@@ -3914,7 +3938,7 @@ begin
     ebnum := Bfield[2, i, curY];
     if (ebnum >= 0) and (Brole[ebnum].Dead = 0) and (Brole[ebnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
   if temphurt > tempmaxhurt then
@@ -3932,7 +3956,7 @@ begin
     ebnum := Bfield[2, i, curY];
     if (ebnum >= 0) and (Brole[ebnum].Dead = 0) and (Brole[ebnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
   if temphurt > tempmaxhurt then
@@ -3950,7 +3974,7 @@ begin
     ebnum := Bfield[2, curX, i];
     if (ebnum >= 0) and (Brole[ebnum].Dead = 0) and (Brole[ebnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
   if temphurt > tempmaxhurt then
@@ -3968,7 +3992,7 @@ begin
     ebnum := Bfield[2, curX, i];
     if (ebnum >= 0) and (Brole[ebnum].Dead = 0) and (Brole[ebnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
   if temphurt > tempmaxhurt then
@@ -3983,15 +4007,15 @@ end;
 
 //原地系十叉米
 
-procedure calcross(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
+procedure calcross(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
 var
   i, tempX, tempY, temphurt, ebnum, rnum: integer;
   distance, range, AttAreaType, myteam: integer;
 begin
-  distance := Rmagic[mnum].MoveDistance[level - 1];
-  range := Rmagic[mnum].AttDistance[level - 1];
+  distance := RStyles[snum].MoveDistance[level - 1];
+  range := RStyles[snum].AttDistance[level - 1];
   range := 0;
-  AttAreaType := Rmagic[mnum].AttAreaType;
+  AttAreaType := RStyles[snum].AttAreaType;
   myteam := Brole[bnum].Team;
 
   temphurt := 0;
@@ -4000,7 +4024,7 @@ begin
     ebnum := Bfield[2, curX + i, curY + i];
     if (ebnum >= 0) and (Brole[ebnum].Dead = 0) and (Brole[ebnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
 
@@ -4009,7 +4033,7 @@ begin
     bnum := Bfield[2, curX + i, curY - i];
     if (bnum >= 0) and (Brole[bnum].Dead = 0) and (Brole[bnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
 
@@ -4018,7 +4042,7 @@ begin
     bnum := Bfield[2, i, curY];
     if (bnum >= 0) and (Brole[bnum].Dead = 0) and (Brole[bnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
 
@@ -4027,7 +4051,7 @@ begin
     bnum := Bfield[2, curX, i];
     if (bnum >= 0) and (Brole[bnum].Dead = 0) and (Brole[bnum].Team <> myteam) then
     begin
-      temphurt := temphurt + CalHurtValue2(bnum, ebnum, mnum, level);
+      temphurt := temphurt + CalHurtValue2(bnum, ebnum, snum, level);
     end;
   end;
 
@@ -4043,14 +4067,14 @@ end;
 
 //目标系方、原地系方
 
-procedure CalArea(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, mnum, level: integer);
+procedure CalArea(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnum, snum, level: integer);
 var
   i, j, k, m, n, tempX, tempY, temphurt: integer;
   distance, range, AttAreaType, myteam: integer;
 begin
-  distance := Rmagic[mnum].MoveDistance[level - 1];
-  range := Rmagic[mnum].AttDistance[level - 1];
-  AttAreaType := Rmagic[mnum].AttAreaType;
+  distance := RStyles[snum].MoveDistance[level - 1];
+  range := RStyles[snum].AttDistance[level - 1];
+  AttAreaType := RStyles[snum].AttAreaType;
   myteam := Brole[bnum].Team;
 
   for i := curX - distance to curX + distance do
@@ -4067,7 +4091,7 @@ begin
           tempY := Brole[k].Y;
           if (abs(tempX - i) <= range) and (abs(tempY - j) <= range) then
           begin
-            temphurt := temphurt + CalHurtValue2(bnum, k, mnum, level);
+            temphurt := temphurt + CalHurtValue2(bnum, k, snum, level);
           end;
         end;
       end;
