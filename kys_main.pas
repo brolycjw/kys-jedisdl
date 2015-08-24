@@ -98,10 +98,22 @@ procedure MenuEsc;
 procedure ShowMenu(menu: integer);
 procedure MenuMedcine;
 procedure MenuMedPoison;
-procedure MenuLearn(rnum: integer);
 procedure ShowLearnStatus(rnum, x, y: integer);
-function SelectLearnType(x, y: integer): integer;
+
+procedure ShowIntro(mnum, x, y, w, mode: integer);
+procedure TryLearn(rnum, mnum, mode: integer);
+
+// Learn magic
+procedure MenuLearnMagic(rnum: integer);
+function CanLearnMagic(rnum, mnum: integer): boolean;
+function SelectLearnMagicType(x, y: integer): integer;
 function SelectLearnMagic(magictype, x, y: integer): integer;
+
+// Learn neigong
+procedure MenuLearnNeigong(rnum: integer);
+function CanLearnNeigong(rnum, ngnum: integer): boolean;
+function SelectLearnNeigong(x, y: integer): integer;
+
 function MenuItem: boolean;
 function ReadItemList(ItemType: integer): integer;
 procedure ShowMenuItem(row, col, x, y, atlu: integer);
@@ -111,8 +123,7 @@ function CanEquip(rnum, inum: integer): boolean;
 procedure MenuStatus;
 procedure ShowStatusByTeam(tnum: integer);
 procedure ShowStatus(rnum: integer); overload;
-procedure ShowStatus(rnum, x, y, select: integer); overload;
-procedure ShowStatus(rnum, x, y, select: integer; refresh: boolean); overload;
+procedure ShowStatus(rnum, x, y: integer; select: integer = -1; refresh: boolean = false; display : integer = 0); overload;
 procedure ShowSimpleStatus(rnum, x, y: integer);
 procedure ShowTalkStatus(rnum, x, y: integer);
 procedure MenuLeave;
@@ -127,6 +138,8 @@ procedure MenuQuit;
 function EffectMedcine(role1, role2: integer): integer;
 function EffectMedPoison(role1, role2: integer): integer;
 function EatOneItem(rnum, inum: integer; times: integer = 1; display: integer = 1): integer;
+function AddMagicAttributes(rnum, mnum: integer; times: integer = 1; display: integer = 1): integer;
+function AddNeigongAttributes(rnum, ngnum: integer; times: integer = 1; display: integer = 1): integer;
 
 //事件系统
 procedure CallEvent(num: integer);
@@ -473,8 +486,6 @@ begin
     MAX_LEVEL := Kys_ini.ReadInteger('constant', 'MAX_LEVEL', 30);
     MAX_WEAPON_MATCH := Kys_ini.ReadInteger('constant', 'MAX_WEAPON_MATCH', 7);
     MIN_KNOWLEDGE := Kys_ini.ReadInteger('constant', 'MIN_KNOWLEDGE', 80);
-    MAX_HP := Kys_ini.ReadInteger('constant', 'MAX_HP', 999);
-    MAX_MP := Kys_ini.ReadInteger('constant', 'MAX_MP', 999);
     LIFE_HURT := Kys_ini.ReadInteger('constant', 'LIFE_HURT', 10);
     POISON_HURT := Kys_ini.ReadInteger('constant', 'POISON_HURT', 10);
     MED_LIFE := Kys_ini.ReadInteger('constant', 'MED_LIFE', 4);
@@ -529,10 +540,10 @@ begin
       (not FileExists(AppPath + 'resource/mmap.imz')) then
       PNG_TILE := 0;
 
-    for i := 43 to 58 do
+    {for i := 43 to 58 do
     begin
       MaxProList[i] := Kys_ini.ReadInteger('constant', 'MaxProList' + IntToStr(i), 100);
-    end;
+    end;}
 
     if LIFE_HURT = 0 then
       LIFE_HURT := 1;
@@ -862,45 +873,41 @@ begin
 
     str := ('資質');
     repeat
-      if MODVersion <> 21 then
-      begin
-        Rrole[0].MaxHP := 250 + random(26);
-        Rrole[0].CurrentHP := Rrole[0].MaxHP;
-        Rrole[0].MaxMP := 250 + random(26);
-        Rrole[0].CurrentMP := Rrole[0].MaxMP;
-        Rrole[0].MPType := random(2);
-        Rrole[0].IncLife := 1 + random(10);
+      Rrole[0].MaxHP := 25 + random(26);
+      Rrole[0].CurrentHP := Rrole[0].MaxHP;
+      Rrole[0].MaxMP := 25 + random(26);
+      Rrole[0].CurrentMP := Rrole[0].MaxMP;
+      Rrole[0].MPType := random(2);
+      Rrole[0].IncLife := 1 + random(10);
 
-        Rrole[0].Attack := 250 + random(6);
-        Rrole[0].Speed := 250 + random(6);
-        Rrole[0].Defence := 250 + random(6);
-        Rrole[0].Medcine := 25 + random(6);
-        Rrole[0].UsePoi := 25 + random(6);
-        Rrole[0].MedPoi := 25 + random(6);
-        Rrole[0].Fist := 250 + random(6);
-        Rrole[0].Sword := 250 + random(6);
-        Rrole[0].Knife := 250 + random(6);
-        Rrole[0].Unusual := 25 + random(6);
-        Rrole[0].HidWeapon := 25 + random(6);
-
-      end;
+      Rrole[0].Attack := 25 + random(6);
+      Rrole[0].Speed := 25 + random(6);
+      Rrole[0].Defence := 25 + random(6);
+      Rrole[0].Medcine := 25 + random(6);
+      Rrole[0].UsePoi := 25 + random(6);
+      Rrole[0].MedPoi := 25 + random(6);
+      Rrole[0].Fist := 25 + random(6);
+      Rrole[0].Sword := 25 + random(6);
+      Rrole[0].Knife := 25 + random(6);
+      Rrole[0].Unusual := 25 + random(6);
+      Rrole[0].HidWeapon := 25 + random(6);
 
       Rrole[0].Aptitude := 1 + random(100);
 
       Redraw;
-      ShowStatus(0);
-      DrawShadowText(screen, @str[1], CENTER_X - 273 + 10, CENTER_Y + 111, ColColor($21), ColColor($23));
+      ShowStatus(0, CENTER_X - 263, CENTER_Y - 192, -1, false, 1);
+      {DrawShadowText(screen, @str[1], CENTER_X - 273 + 10, CENTER_Y + 111, ColColor($21), ColColor($23));
       str0 := format('%4d', [Rrole[0].Aptitude]);
       DrawEngShadowText(screen, @str0[1], CENTER_X - 273 + 110, CENTER_Y + 111, ColColor($64), ColColor($66));
-      SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+      SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);}
       i := WaitAnyKey;
     until (i = SDLK_ESCAPE) or (i = SDLK_RETURN);
 
-    ShowStatus(0);
-    DrawShadowText(screen, @str[1], 30, CENTER_Y + 111, ColColor($23), ColColor($21));
+    ShowStatus(0, CENTER_X - 263, CENTER_Y - 192, -1, false, 1);
+    {DrawShadowText(screen, @str[1], 30, CENTER_Y + 111, ColColor($23), ColColor($21));
     str0 := format('%4d', [Rrole[0].Aptitude]);
     DrawEngShadowText(screen, @str0[1], 150, CENTER_Y + 111, ColColor($66), ColColor($63));
-    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);}
 
     StartAmi;
   end;
@@ -969,7 +976,7 @@ begin
 
   MagicAmount := (StyleOffset - MagicOffset) div 140;
   StylesAmount := (NeigongOffset - StyleOffset) div 176;
-  NeigongAmount := (WeiShopOffset - NeigongOffset) div 136;
+  NeigongAmount := (WeiShopOffset - NeigongOffset) div 180;
   if IsConsole then
   begin
     writeln('MagicAmount ', MagicAmount);
@@ -2429,7 +2436,7 @@ begin
           (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 29) then
         begin
           menup := menu;
-          menu := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div 22;
+          menu := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div FONT_HEIGHT;
           if menu > max then
             menu := max;
           if menu < 0 then
@@ -2513,7 +2520,7 @@ begin
           (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 29) then
         begin
           menup := menu;
-          menu := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div 22;
+          menu := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div FONT_HEIGHT;
           if menu > max then
             menu := max;
           if menu < 0 then
@@ -2550,7 +2557,7 @@ var
   temp: PSDL_Surface;
 begin
   LoadFreshScreen(x, y, w + 1, max * FONT_HEIGHT + 29);
-  DrawRectangle(screen, x, y, w, max * FONT_HEIGHT + 28, 0, ColColor(255), 50);
+  DrawRectangle(screen, x, y, w, max * FONT_HEIGHT + 26, 0, ColColor(255), 50);
   if (length(menuEngString) > 0) and (length(menuString) = length(menuEngString)) then
     p := 1
   else
@@ -2766,7 +2773,7 @@ begin
   LoadFreshScreen(x, y, w + 1, max * FONT_HEIGHT + 29);
   if max + 1 < maxshow then
     maxshow := max + 1;
-  DrawRectangle(screen, x, y, w, maxshow * FONT_HEIGHT + 6, 0, ColColor(255), 50);
+  DrawRectangle(screen, x, y, w, maxshow * FONT_HEIGHT + 4, 0, ColColor(255), 50);
   if (length(menuEngString) > 0) and (length(menuString) = length(menuEngString)) then
     p := 1
   else
@@ -3177,33 +3184,6 @@ begin
 
 end;
 
-//修煉武功内功
-
-procedure MenuLearn(rnum: integer);
-var
-  x, y, menu, menu2: integer;
-  str: WideString;
-begin
-  x := 10;
-  y := 48;
-  str := ('修煉種類');
-  Redraw;
-  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
-
-  ShowLearnStatus(rnum, screen.w - 130, 10);
-
-  DrawTextWithRect(screen, @str[1], 10, 10, 87, ColColor($21), ColColor($23));
-  menu := SelectLearnType(x, y);
-
-  if menu >= 0 then
-  begin
-    if menu > 0 then
-    begin
-      menu2 := SelectLearnMagic(menu, x + 10 + FONT_WIDTH * 4, y);
-    end;
-  end;
-end;
-
 procedure ShowLearnStatus(rnum, x, y: integer);
 var
   i, magicnum: integer;
@@ -3296,24 +3276,288 @@ begin
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
 end;
 
-function SelectLearnType(x, y: integer): integer;
+//顯示物品説明
+procedure ShowIntro(mnum, x, y, w, mode: integer);
+var
+  i, offset, max: integer;
+  addvalues: array[0..12] of integer;
+  str: WideString;
+  ngtypes: array[0..1] of WideString;
+  strs: array[0..12] of WideString;
+begin
+  max := 0;
+  Redraw;
+  str := '説明：';
+  ngtypes[0] := ('陰');
+  ngtypes[1] := ('陽');
+
+  DrawTextWithRect(screen, @str[1], x, y, w, ColColor($21), ColColor($23));
+  case mode of
+    0:
+    begin
+      DrawBig5ShadowText(screen, @RMagic[mnum].Introduction, x + 69, 13, ColColor($5), ColColor($7));
+      offset := 57;
+      strs[0] := ('需内力性質');
+      strs[1] := ('需内力');
+      strs[2] := ('需攻擊力');
+      strs[3] := ('需輕功');
+      strs[4] := ('需用毒');
+      strs[5] := ('需醫療');
+      strs[6] := ('需解毒');
+      strs[7] := ('需拳掌');
+      strs[8] := ('需御劍');
+      strs[9] := ('需耍刀');
+      strs[10] := ('需特殊兵器');
+      strs[11] := ('需暗器');
+      strs[12] := ('需資質');
+      for i := 0 to 12 do
+      begin
+        addvalues[i] := RMagic[mnum].Data[offset + i];
+        if (i <> 0) and (addvalues[i] > 0) then
+          max := max + 1;
+      end;
+      // 内力性質處理
+      if addvalues[0] < 2 then
+        max := max + 1;
+      if max > 0 then
+      begin
+        DrawRectangle(screen, x + 120, y + 38, 215, FONT_HEIGHT * max + 6, 0, ColColor(255), 50);
+        for i := 12 downto 1 do
+        begin
+          if addvalues[i] > 0 then
+          begin
+            max := max - 1;
+            DrawShadowText(screen, @strs[i, 1], x + 122, y + 41 + FONT_HEIGHT * max, ColColor($21), ColColor($23));
+            str := Format('%4d', [addvalues[i]]);
+            DrawShadowText(screen, @str[1], x + 292, y + 41 + FONT_HEIGHT * max, ColColor($5), ColColor($7));
+          end;
+        end;
+        if max > 0 then
+        begin
+          WriteLn('addvalues[0] = ', addvalues[0]);
+          DrawShadowText(screen, @strs[0, 1], x + 122, y + 41, ColColor($21), ColColor($23));
+          str := ngtypes[addvalues[0]];
+          DrawShadowText(screen, @str[1], x + 308, y + 41, ColColor($5), ColColor($7));
+        end;
+      end;
+      SDL_UpdateRect2(screen, x + 120, y + 38, 216, FONT_HEIGHT * 15 + 6);
+    end;
+    1:
+    begin
+      DrawBig5ShadowText(screen, @RNeigong[mnum].Introduction, x + 69, 13, ColColor($5), ColColor($7));
+      offset := 77;
+      strs[0] := ('需内力性質');
+      strs[1] := ('需内力');
+      strs[2] := ('需攻擊力');
+      strs[3] := ('需輕功');
+      strs[4] := ('需防禦力');
+      strs[5] := ('需用毒');
+      strs[6] := ('需醫療');
+      strs[7] := ('需解毒');
+      strs[8] := ('需資質');
+      for i := 0 to 8 do
+      begin
+        addvalues[i] := RNeigong[mnum].Data[offset + i];
+        if (i <> 0) and (addvalues[i] > 0) then
+          max := max + 1;
+      end;
+      // 内力性質處理
+      if addvalues[0] < 2 then
+        max := max + 1;
+      if max > 0 then
+      begin
+        DrawRectangle(screen, x, y + 38, 215, FONT_HEIGHT * max + 6, 0, ColColor(255), 50);
+        WriteLn('neigongmax = ', max);
+        for i := 8 downto 1 do
+        begin
+          if addvalues[i] > 0 then
+          begin
+            max := max - 1;
+            DrawShadowText(screen, @strs[i, 1], x + 2, y + 41 + FONT_HEIGHT * max, ColColor($21), ColColor($23));
+            str := Format('%4d', [addvalues[i]]);
+            DrawShadowText(screen, @str[1], x + 172, y + 41 + FONT_HEIGHT * max, ColColor($5), ColColor($7));
+          end;
+        end;
+        if max > 0 then
+        begin
+          DrawShadowText(screen, @strs[0, 1], x + 2, y + 41, ColColor($21), ColColor($23));
+          str := ngtypes[addvalues[0]];
+          DrawShadowText(screen, @str[1], x + 188, y + 41, ColColor($5), ColColor($7));
+        end;
+      end;
+      SDL_UpdateRect2(screen, x, y + 38, 216, FONT_HEIGHT * 15 + 6);
+    end;
+  end;
+  SDL_UpdateRect2(screen, x, y, w, 28);
+end;
+
+procedure TryLearn(rnum, mnum, mode: integer);
+var
+  str: WideString;
+begin
+  Redraw;
+  case mode of
+    0:
+    if CanLearnMagic(rnum, mnum) then
+    begin
+      Rrole[rnum].PracticeMagic := mnum;
+    end
+    else
+    begin
+      Redraw;
+      str := ('此人不適合修煉此武功');
+      DrawTextWithRect(screen, @str[1], 108, 10, 390, ColColor($64), ColColor($66));
+      WaitAnyKey;
+      Redraw;
+    end;
+    1:
+    if CanLearnNeigong(rnum, mnum) then
+    begin
+      Rrole[rnum].PracticeNeigong := mnum;
+    end
+    else
+    begin
+      Redraw;
+      str := ('此人不適合修煉此内功');
+      DrawTextWithRect(screen, @str[1], 130, 10, 368, ColColor($64), ColColor($66));
+      WaitAnyKey;
+      Redraw;
+    end;
+  end;
+end;
+
+//修煉武功選單
+procedure MenuLearnMagic(rnum: integer);
+var
+  x, y, menu, mnum: integer;
+  str: WideString;
+begin
+  x := 10;
+  y := 48;
+  str := ('武功種類');
+  Redraw;
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+
+  ShowLearnStatus(rnum, screen.w - 130, 10);
+
+  DrawTextWithRect(screen, @str[1], 10, 10, 87, ColColor($21), ColColor($23));
+  menu := SelectLearnMagicType(x, y);
+
+  if menu >= 0 then
+  begin
+    mnum := SelectLearnMagic(menu + 1, x + 10 + FONT_WIDTH * 4, y);
+    if IsConsole then
+      WriteLn('mnum = ', mnum);
+    if mnum >= 0 then
+      TryLearn(rnum, mnum, 0);
+  end;
+end;
+
+function CanLearnMagic(rnum, mnum: integer): boolean;
+var
+  i, r: integer;
+  menuString: array[0..2] of WideString;
+  str: WideString;
+begin
+
+  //判断是否符合
+  //注意这里对'所需属性'为负值时均添加原版类似资质的处理
+
+  Result := True;
+
+  if sign(RMagic[mnum].NeedMP) * Rrole[rnum].CurrentMP < RMagic[mnum].NeedMP then
+    Result := False;
+  if sign(RMagic[mnum].NeedAttack) * Rrole[rnum].Attack < RMagic[mnum].NeedAttack then
+    Result := False;
+  if sign(RMagic[mnum].NeedSpeed) * Rrole[rnum].Speed < RMagic[mnum].NeedSpeed then
+    Result := False;
+  if sign(RMagic[mnum].NeedUsePoi) * Rrole[rnum].UsePoi < RMagic[mnum].NeedUsepoi then
+    Result := False;
+  if sign(RMagic[mnum].NeedMedcine) * Rrole[rnum].Medcine < RMagic[mnum].NeedMedcine then
+    Result := False;
+  if sign(RMagic[mnum].NeedMedPoi) * Rrole[rnum].MedPoi < RMagic[mnum].NeedMedPoi then
+    Result := False;
+  if sign(RMagic[mnum].NeedFist) * Rrole[rnum].Fist < RMagic[mnum].NeedFist then
+    Result := False;
+  if sign(RMagic[mnum].NeedSword) * Rrole[rnum].Sword < RMagic[mnum].NeedSword then
+    Result := False;
+  if sign(RMagic[mnum].NeedKnife) * Rrole[rnum].Knife < RMagic[mnum].NeedKnife then
+    Result := False;
+  if sign(RMagic[mnum].NeedUnusual) * Rrole[rnum].Unusual < RMagic[mnum].NeedUnusual then
+    Result := False;
+  if sign(RMagic[mnum].NeedHidWeapon) * Rrole[rnum].HidWeapon < RMagic[mnum].NeedHidWeapon then
+    Result := False;
+  if sign(RMagic[mnum].NeedAptitude) * Rrole[rnum].Aptitude < RMagic[mnum].NeedAptitude then
+    Result := False;
+
+  //内力性质
+  if (Rrole[rnum].MPType < 2) and (RMagic[mnum].NeedMPType < 2) then
+    if Rrole[rnum].MPType <> RMagic[mnum].NeedMPType then
+      Result := False;
+
+  //如有专用人物, 前面的都作废
+  if (RMagic[mnum].OnlyPracRole >= 0) and (Result = True) then
+    if (RMagic[mnum].OnlyPracRole = rnum) then
+      Result := True
+    else
+      Result := False;
+
+  if IsConsole then
+    WriteLn('Status result = ', Result);
+
+  //如已有10种武功, 且物品也能练出武功, 则结果为假
+  r := 0;
+  for i := 0 to 9 do
+    if Rrole[rnum].Magic[i] > 0 then
+      r := r + 1;
+  if (r >= 10) then
+    Result := False;
+
+  //如果已有秘籍所练出的武功且小于10级, 则为真
+  for i := 0 to 9 do
+    if (Rrole[rnum].Magic[i] = mnum) and (Rrole[rnum].MagLevel[i] < 10) then
+    begin
+      Result := True;
+      break;
+    end;
+
+  //如果以上判定为真, 且属于自宫物品, 则提问, 若选否则为假
+  {if (inum in [78, 93]) and (Result = True) and (Rrole[rnum].Sexual <> 2) then
+  begin
+    Redraw;
+    menuString[0] := ('取消');
+    menuString[1] := ('繼續');
+    str := ('是否自宮？');
+    DrawTextWithRect(screen, @str[1], 80, 30, 105, ColColor(7), ColColor(5));
+    if CommonMenu(80, 65, 45, 1, menuString) = 1 then
+      Rrole[rnum].Sexual := 2
+    else
+      Result := False;
+  end;}
+
+end;
+
+
+
+function SelectLearnMagicType(x, y: integer): integer;
 var
   i: integer;
+  str: WideString;
   menuString: array of WideString;
 begin
-  setlength(menuString, 5);
-  menuString[0] := ('内功心法');
-  menuString[1] := ('拳掌武功');
-  menuString[2] := ('劍系武功');
-  menuString[3] := ('刀系武功');
-  menuString[4] := ('特殊武功');
-  Result := CommonMenu(x, y, 87, 4, menuString);
+  setlength(menuString, 4);
+  menuString[0] := ('拳掌武功');
+  menuString[1] := ('劍系武功');
+  menuString[2] := ('刀系武功');
+  menuString[3] := ('特殊武功');
+  Result := CommonMenu(x, y, FONT_HEIGHT * 4, 3, menuString);
 end;
 
 function SelectLearnMagic(magictype, x, y: integer): integer;
 var
   i, w, max, maxshow, menu, menup, menutop: integer;
   magicnumArray: array of integer;
+  str: WideString;
   menuString, menuEngString: array of WideString;
 begin
   setlength(magicnumArray, MagicAmount);
@@ -3337,9 +3581,9 @@ begin
 
   //SDL_EnableKeyRepeat(0,10);
   //DrawMMap;
-  RecordFreshScreen(x, y, w + 1, max * FONT_HEIGHT + 29);
+  RecordFreshScreen(x, y, w + 1, max * FONT_HEIGHT + 6);
   ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-  SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+  SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
   while (SDL_WaitEvent(@event) >= 0) do
   begin
     CheckBasicEvent;
@@ -3358,8 +3602,9 @@ begin
             menu := 0;
             menutop := 0;
           end;
+          ShowIntro(magicnumArray[menu], x, 10, 390, 0);
           ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
         end;
         if (event.key.keysym.sym = SDLK_UP) then
         begin
@@ -3378,8 +3623,9 @@ begin
             else
                menutop := menu - max;
           end;
+          ShowIntro(magicnumArray[menu], x, 10, 390, 0);
           ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
         end;
         if (event.key.keysym.sym = SDLK_PAGEDOWN) then
         begin
@@ -3393,8 +3639,9 @@ begin
           begin
             menutop := max - maxshow + 1;
           end;
+          ShowIntro(magicnumArray[menu], x, 10, 390, 0);
           ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
         end;
         if (event.key.keysym.sym = SDLK_PAGEUP) then
         begin
@@ -3408,21 +3655,18 @@ begin
           begin
             menutop := 0;
           end;
+          ShowIntro(magicnumArray[menu], x, 10, 390, 0);
           ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
         end;
         if ((event.key.keysym.sym = SDLK_ESCAPE)) and (where <= 2) then
         begin
           Result := -1;
-          //ReDraw;
-          //SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
           break;
         end;
         if (event.key.keysym.sym = SDLK_RETURN) or (event.key.keysym.sym = SDLK_SPACE) then
         begin
           Result := menu;
-          //Redraw;
-          //SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
           break;
         end;
       end;
@@ -3431,8 +3675,6 @@ begin
         if (event.button.button = SDL_BUTTON_RIGHT) and (where <= 2) then
         begin
           Result := -1;
-          //ReDraw;
-          //SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
           break;
         end;
         if (event.button.button = SDL_BUTTON_LEFT) then
@@ -3440,11 +3682,9 @@ begin
           if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
             (round(event.button.x / (RESOLUTIONX / screen.w)) < x + w) and
             (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
-            (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 29) then
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 6) then
           begin
             Result := menu;
-            //Redraw;
-            //SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
             break;
           end;
         end;
@@ -3463,8 +3703,9 @@ begin
             menu := 0;
             menutop := 0;
           end;
+          ShowIntro(magicnumArray[menu], x, 10, 390, 0);
           ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
         end;
         if (event.wheel.y < 0) then
         begin
@@ -3478,8 +3719,9 @@ begin
             menu := max;
             menutop := menu - maxshow + 1;
           end;
+          ShowIntro(magicnumArray[menu], x, 10, 390, 0);
           ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
         end;
       end;
       SDL_MOUSEMOTION:
@@ -3487,7 +3729,302 @@ begin
         if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
           (round(event.button.x / (RESOLUTIONX / screen.w)) < x + w) and
           (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
-          (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 29) then
+          (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 6) then
+        begin
+          menup := menu;
+          menu := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div 22 + menutop;
+          if menu > max then
+            menu := max;
+          if menu > menutop + maxshow - 1 then
+            menu := menutop + maxshow - 1;
+          if menu < 0 then
+            menu := 0;
+          if menup <> menu then
+          begin
+            ShowIntro(magicnumArray[menu], x, 10, 390, 0);
+            ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+            SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+          end;
+        end;
+      end;
+    end;
+  end;
+  //清空键盘键和鼠标键值, 避免影响其余部分
+  event.key.keysym.sym := 0;
+  event.button.button := 0;
+  if Result >= 0 then
+    Result := magicNumArray[menu];
+end;
+
+//修煉武功選單
+procedure MenuLearnNeigong(rnum: integer);
+var
+  x, y, menu, ngnum: integer;
+  str: WideString;
+begin
+  x := 10;
+  y := 48;
+  str := ('請選擇内功');
+  Redraw;
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+
+  ShowLearnStatus(rnum, screen.w - 130, 10);
+
+  DrawTextWithRect(screen, @str[1], 10, 10, 110, ColColor($21), ColColor($23));
+
+  ngnum := SelectLearnNeigong(10, y);
+  if IsConsole then
+    WriteLn('ngnum = ', ngnum);
+  if ngnum >= 0 then
+    TryLearn(rnum, ngnum, 1);
+end;
+
+function CanLearnNeigong(rnum, ngnum: integer): boolean;
+var
+  i, r: integer;
+  menuString: array[0..2] of WideString;
+  str: WideString;
+begin
+
+  //判断是否符合
+  //注意这里对'所需属性'为负值时均添加原版类似资质的处理
+
+  Result := True;
+
+  if sign(RNeigong[ngnum].NeedMP) * Rrole[rnum].CurrentMP < RNeigong[ngnum].NeedMP then
+    Result := False;
+  if sign(RNeigong[ngnum].NeedAttack) * Rrole[rnum].Attack < RNeigong[ngnum].NeedAttack then
+    Result := False;
+  if sign(RNeigong[ngnum].NeedSpeed) * Rrole[rnum].Speed < RNeigong[ngnum].NeedSpeed then
+    Result := False;
+  if sign(RNeigong[ngnum].NeedUsePoi) * Rrole[rnum].UsePoi < RNeigong[ngnum].NeedUsepoi then
+    Result := False;
+  if sign(RNeigong[ngnum].NeedAptitude) * Rrole[rnum].Aptitude < RNeigong[ngnum].NeedAptitude then
+    Result := False;
+
+  //内力性质
+  if (Rrole[rnum].MPType < 2) and (RNeigong[ngnum].NeedMPType < 2) then
+    if Rrole[rnum].MPType <> RNeigong[ngnum].NeedMPType then
+      Result := False;
+
+  //如有专用人物, 前面的都作废
+  if (RNeigong[ngnum].OnlyPracRole >= 0) and (Result = True) then
+    if (RNeigong[ngnum].OnlyPracRole = rnum) then
+      Result := True
+    else
+      Result := False;
+
+  if IsConsole then
+    WriteLn('Status result = ', Result);
+
+  //如已有10种武功, 且物品也能练出武功, 则结果为假
+  r := 0;
+  for i := 0 to 9 do
+    if Rrole[rnum].Neigong[i] > 0 then
+      r := r + 1;
+  if (r >= 10) then
+    Result := False;
+
+  //如果已有秘籍所练出的武功且小于10级, 则为真
+  for i := 0 to 9 do
+    if (Rrole[rnum].Neigong[i] = ngnum) and (Rrole[rnum].MagLevel[i] < 10) then
+    begin
+      Result := True;
+      break;
+    end;
+
+  //如果以上判定为真, 且属于自宫物品, 则提问, 若选否则为假
+  {if (inum in [78, 93]) and (Result = True) and (Rrole[rnum].Sexual <> 2) then
+  begin
+    Redraw;
+    menuString[0] := ('取消');
+    menuString[1] := ('繼續');
+    str := ('是否自宮？');
+    DrawTextWithRect(screen, @str[1], 80, 30, 105, ColColor(7), ColColor(5));
+    if CommonMenu(80, 65, 45, 1, menuString) = 1 then
+      Rrole[rnum].Sexual := 2
+    else
+      Result := False;
+  end;}
+
+end;
+
+function SelectLearnNeigong(x, y: integer): integer;
+var
+  i, w, max, maxshow, menu, menup, menutop: integer;
+  neigongnumArray: array of integer;
+  menuString, menuEngString: array of WideString;
+begin
+  setlength(neigongnumArray, NeigongAmount);
+  setlength(menuString, NeigongAmount);
+  setlength(menuEngString, 0);
+  menu := 0;
+  menutop := 0;
+  w := 108;
+  max := 0;
+  maxshow := 16;
+  for i := 0 to NeigongAmount - 1 do
+  begin
+    if (RNeigong[i].CanLearn > 0) then
+    begin
+      menuString[max] := Big5ToUnicode(@RNeigong[i].Name);
+      neigongnumArray[max] := i;
+      max := max + 1;
+    end;
+  end;
+  max := max - 1;
+
+  //SDL_EnableKeyRepeat(0,10);
+  //DrawMMap;
+  RecordFreshScreen(x, y, w + 1, max * FONT_HEIGHT + 6);
+  ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+  SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+  while (SDL_WaitEvent(@event) >= 0) do
+  begin
+    CheckBasicEvent;
+    case event.type_ of
+      SDL_KEYUP:
+      begin
+        if (event.key.keysym.sym = SDLK_DOWN) then
+        begin
+          menu := menu + 1;
+          if menu - menutop >= maxshow then
+          begin
+            menutop := menutop + 1;
+          end;
+          if menu > max then
+          begin
+            menu := 0;
+            menutop := 0;
+          end;
+          ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
+          ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+        end;
+        if (event.key.keysym.sym = SDLK_UP) then
+        begin
+          menu := menu - 1;
+          if menu <= menutop then
+          begin
+            menutop := menu;
+          end;
+          if menu < 0 then
+          begin
+            menu := max;
+            if max > maxshow then
+            begin
+               menutop := menu - maxshow + 1;
+            end
+            else
+               menutop := menu - max;
+          end;
+          ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
+          ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+        end;
+        if (event.key.keysym.sym = SDLK_PAGEDOWN) then
+        begin
+          menu := menu + maxshow;
+          menutop := menutop + maxshow;
+          if menu > max then
+          begin
+            menu := max;
+          end;
+          if menutop > max - maxshow + 1 then
+          begin
+            menutop := max - maxshow + 1;
+          end;
+          ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
+          ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+        end;
+        if (event.key.keysym.sym = SDLK_PAGEUP) then
+        begin
+          menu := menu - maxshow;
+          menutop := menutop - maxshow;
+          if menu < 0 then
+          begin
+            menu := 0;
+          end;
+          if menutop < 0 then
+          begin
+            menutop := 0;
+          end;
+          ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
+          ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+        end;
+        if ((event.key.keysym.sym = SDLK_ESCAPE)) and (where <= 2) then
+        begin
+          Result := -1;
+          break;
+        end;
+        if (event.key.keysym.sym = SDLK_RETURN) or (event.key.keysym.sym = SDLK_SPACE) then
+        begin
+          Result := menu;
+          break;
+        end;
+      end;
+      SDL_MOUSEBUTTONUP:
+      begin
+        if (event.button.button = SDL_BUTTON_RIGHT) and (where <= 2) then
+        begin
+          Result := -1;
+          break;
+        end;
+        if (event.button.button = SDL_BUTTON_LEFT) then
+        begin
+          if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
+            (round(event.button.x / (RESOLUTIONX / screen.w)) < x + w) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 28) then
+          begin
+            Result := menu;
+            break;
+          end;
+        end;
+      end;
+      SDL_MOUSEWHEEL:
+      begin
+        if (event.wheel.y > 0) then
+        begin
+          menu := menu + 1;
+          if menu - menutop >= maxshow then
+          begin
+            menutop := menutop + 1;
+          end;
+          if menu > max then
+          begin
+            menu := 0;
+            menutop := 0;
+          end;
+          ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
+          ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+        end;
+        if (event.wheel.y < 0) then
+        begin
+          menu := menu - 1;
+          if menu <= menutop then
+          begin
+            menutop := menu;
+          end;
+          if menu < 0 then
+          begin
+            menu := max;
+            menutop := menu - maxshow + 1;
+          end;
+          ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
+          ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
+          SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
+        end;
+      end;
+      SDL_MOUSEMOTION:
+      begin
+        if (round(event.button.x / (RESOLUTIONX / screen.w)) >= x) and
+          (round(event.button.x / (RESOLUTIONX / screen.w)) < x + w) and
+          (round(event.button.y / (RESOLUTIONY / screen.h)) > y) and
+          (round(event.button.y / (RESOLUTIONY / screen.h)) < y + max * FONT_HEIGHT + 6) then
         begin
           menup := menu;
           menu := (round(event.button.y / (RESOLUTIONY / screen.h)) - y - 2) div 22 + menutop;
@@ -3497,8 +4034,9 @@ begin
             menu := 0;
           if menup <> menu then
           begin
+            ShowIntro(neigongnumArray[menu], x + 120, 10, 368, 1);
             ShowCommonScrollMenu(x, y, w, max, maxshow, menu, menutop, menuString, menuEngString);
-            SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 29);
+            SDL_UpdateRect2(screen, x, y, w + 1, maxshow * FONT_HEIGHT + 6);
           end;
         end;
       end;
@@ -3507,7 +4045,8 @@ begin
   //清空键盘键和鼠标键值, 避免影响其余部分
   event.key.keysym.sym := 0;
   event.button.button := 0;
-  Result := menu; //magicnumArray[CommonScrollMenu(x, y, 108, amount - 1, 16, menuString)] - 1;
+  if Result >= 0 then
+    Result := neigongNumArray[menu];
 end;
 
 //物品选单
@@ -3546,8 +4085,8 @@ begin
       setlength(menuString, max + 1);
       menuString[0] := ('靈丹妙藥');
       menuString[1] := ('傷人暗器');
-      xm := 150;
-      ym := 150;
+      xm := 19 + FONT_WIDTH * 2;
+      ym := 13 + FONT_WIDTH * 5;
     end;
   end;
 
@@ -4172,10 +4711,10 @@ begin
           if CanEquip(rnum, inum) then
           begin
             if Ritem[inum].User >= 0 then
-              Rrole[Ritem[inum].User].PracticeBook := -1;
-            if Rrole[rnum].PracticeBook >= 0 then
-              Ritem[Rrole[rnum].PracticeBook].User := -1;
-            Rrole[rnum].PracticeBook := inum;
+              Rrole[Ritem[inum].User].PracticeMagic := -1;
+            if Rrole[rnum].PracticeMagic >= 0 then
+              Ritem[Rrole[rnum].PracticeMagic].User := -1;
+            Rrole[rnum].PracticeMagic := inum;
             Ritem[inum].User := rnum;
               {if (inum in [78, 93]) then
                 rrole[rnum].Sexual := 2;}
@@ -4354,8 +4893,8 @@ begin
   teamy := 45;
   ngx := 460;
   ngy := 314;
-  learnx := 280;
-  learny := y + 5 + FONT_HEIGHT * 11;
+  learnx := 290;
+  learny := y + 5 + FONT_HEIGHT * 12;
   curselect := -1;
   if TeamList[tnum] >= 0 then
   begin
@@ -4389,11 +4928,15 @@ begin
             end
             // 修煉範圍
             else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= learnx) and
-             (round(event.button.x / (RESOLUTIONX / screen.w)) < learnx + 80) and
+             (round(event.button.x / (RESOLUTIONX / screen.w)) < learnx + FONT_WIDTH * 5) and
              (round(event.button.y / (RESOLUTIONY / screen.h)) > learny) and
-             (round(event.button.y / (RESOLUTIONY / screen.h)) < learny + 20) then
+             (round(event.button.y / (RESOLUTIONY / screen.h)) < learny + FONT_HEIGHT * 3) then
             begin
-              MenuLearn(TeamList[tnum]);
+              case curselect of
+                5: MenuLearnMagic(TeamList[tnum]);
+                7: MenuLearnNeigong(TeamList[tnum]);
+              end;
+              ShowStatus(TeamList[tnum], x, y, -1);
             end
             // 内功範圍
             else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= ngx) and
@@ -4427,11 +4970,15 @@ begin
           end
            // 修煉範圍
           else if (round(event.button.x / (RESOLUTIONX / screen.w)) >= learnx) and
-            (round(event.button.x / (RESOLUTIONX / screen.w)) < learnx + 80) and
+            (round(event.button.x / (RESOLUTIONX / screen.w)) < learnx + FONT_WIDTH * 5) and
             (round(event.button.y / (RESOLUTIONY / screen.h)) > learny) and
-            (round(event.button.y / (RESOLUTIONY / screen.h)) < learny + 20) then
+            (round(event.button.y / (RESOLUTIONY / screen.h)) < learny + FONT_HEIGHT * 3) then
           begin
-              curselect := 5;
+              curselect := 5 + (round(event.button.y / (RESOLUTIONY / screen.h)) - learny - 2) div FONT_HEIGHT;
+              if curselect > 7 then
+                curselect := 7;
+              if curselect < 5 then
+                curselect := 5;
               if prevselect <> curselect then
               begin
                 ShowStatus(TeamList[tnum], x, y, curselect);
@@ -4443,7 +4990,7 @@ begin
             (round(event.button.y / (RESOLUTIONY / screen.h)) > ngy) and
             (round(event.button.y / (RESOLUTIONY / screen.h)) < 417) then
           begin
-            curselect := (round(event.button.y / (RESOLUTIONY / screen.h)) - ngy - 2) div 22;
+            curselect := (round(event.button.y / (RESOLUTIONY / screen.h)) - ngy - 2) div FONT_HEIGHT;
             curselect := curselect + 10;
             if curselect > 14 then
               curselect := 14;
@@ -4475,12 +5022,7 @@ begin
   ShowStatus(rnum, CENTER_X - 273, 48, -1);
 end;
 
-procedure ShowStatus(rnum, x, y, select: integer); overload;
-begin
-  ShowStatus(rnum, x, y, select, false);
-end;
-
-procedure ShowStatus(rnum, x, y, select: integer; refresh: boolean); overload;
+procedure ShowStatus(rnum, x, y: integer; select: integer = -1; refresh: boolean = false; display: integer = 0); overload;
 var
   i, teamcount, magicnum, mlevel, neigongnum, neigonglevel, needexp: integer;
   p: array[0..10] of integer;
@@ -4514,7 +5056,7 @@ begin
   strs[15] := ('特殊');
   strs[16] := ('暗器');
   strs[17] := ('裝備物品');
-  strs[18] := ('修煉物品');
+  strs[18] := ('目前修煉');
   strs[19] := ('所會武功');
   strs[20] := ('受傷');
   strs[21] := ('中毒');
@@ -4535,33 +5077,38 @@ begin
   if where <= 2 then
     LoadFreshScreen(0, 0, screen.w, screen.h);
 
-  str := ('查看隊員狀態');
-  DrawTextWithRect(screen, @str[1], 10, 10, FONT_WIDTH * 6, ColColor($21), ColColor($23));
+  if display = 0 then
+  begin
+    str := ('查看隊員狀態');
+    DrawTextWithRect(screen, @str[1], 10, 10, FONT_WIDTH * 6, ColColor($21), ColColor($23));
 
-  //顯示隊友選項
-  teamcount := 0;
-  for i := 0 to 5 do
-  begin
-    if Teamlist[i] >= 0 then
+    //顯示隊友選項
+    teamcount := 0;
+    for i := 0 to 5 do
     begin
-      teamnames[i] := Big5ToUnicode(@Rrole[Teamlist[i]].Name);
-      teamcount := teamcount + 1;
+      if Teamlist[i] >= 0 then
+      begin
+        teamnames[i] := Big5ToUnicode(@Rrole[Teamlist[i]].Name);
+        teamcount := teamcount + 1;
+      end;
     end;
-  end;
-  DrawRectangle(screen, 10, y, FONT_WIDTH * 4, 4 + teamcount * FONT_HEIGHT, 0, ColColor(255), 50);
-  for i := 0 to teamcount do
-  begin
-    if (i = select)or (Teamlist[i] = rnum) then
+
+    DrawRectangle(screen, 10, y, FONT_WIDTH * 4, 4 + teamcount * FONT_HEIGHT, 0, ColColor(255), 50);
+
+    for i := 0 to teamcount do
     begin
-      color1 := ColColor($64);
-      color2 := ColColor($66);
-    end
-    else
-    begin
-      color1 := ColColor($5);
-      color2 := ColColor($7);
+      if (i = select)or (Teamlist[i] = rnum) then
+      begin
+        color1 := ColColor($64);
+        color2 := ColColor($66);
+      end
+      else
+      begin
+        color1 := ColColor($5);
+        color2 := ColColor($7);
+      end;
+      DrawShadowText(screen, @teamnames[i, 1], 12, y + 3 + FONT_HEIGHT * i, color1, color2);
     end;
-    DrawShadowText(screen, @teamnames[i, 1], 12, y + 3 + FONT_HEIGHT * i, color1, color2);
   end;
 
   DrawRectangle(screen, x, y, 525, 10 + FONT_HEIGHT * 17, 0, ColColor(255), 50);
@@ -4575,7 +5122,7 @@ begin
   for i := 0 to 5 do
     DrawShadowText(screen, @strs[i, 1], x + 10, y + 5 + FONT_HEIGHT * (5 + i), ColColor($21), ColColor($23));
   for i := 6 to 16 do
-    DrawShadowText(screen, @strs[i, 1], x + 180, y + 5 + FONT_HEIGHT * (i - 6), ColColor($64), ColColor($66));
+    DrawShadowText(screen, @strs[i, 1], x + 180, y + 5 + FONT_HEIGHT * (i - 6), ColColor($21), ColColor($23));
   DrawShadowText(screen, @strs[19, 1], x + 360, y + 5, ColColor($21), ColColor($23));
 
   addatk := 0;
@@ -4714,6 +5261,13 @@ begin
 
   //装备, 秘笈
   DrawShadowText(screen, @strs[17, 1], x + 10, y + 5 + FONT_HEIGHT * 11, ColColor($21), ColColor($23));
+  DrawShadowText(screen, @strs[18, 1], x + 180, y + 5 + FONT_HEIGHT * 11, ColColor($21), ColColor($23));
+  if Rrole[rnum].Equip[0] >= 0 then
+    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[0]].Name, x + 20, y + 5 + FONT_HEIGHT * 12, ColColor($5), ColColor($7));
+  if Rrole[rnum].Equip[1] >= 0 then
+    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[1]].Name, x + 20, y + 5 + FONT_HEIGHT * 13, ColColor($5), ColColor($7));
+
+  //武功修煉
   if select = 5 then
   begin
     color1 := ColColor($64);
@@ -4721,20 +5275,13 @@ begin
   end
   else
   begin
-    color1 := ColColor($21);
-    color2 := ColColor($23);
+    color1 := ColColor($5);
+    color2 := ColColor($7);
   end;
-  DrawShadowText(screen, @strs[18, 1], x + 180, y + 5 + FONT_HEIGHT * 11, color1, color2);
-  if Rrole[rnum].Equip[0] >= 0 then
-    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[0]].Name, x + 20, y + 5 + FONT_HEIGHT * 12, ColColor($5), ColColor($7));
-  if Rrole[rnum].Equip[1] >= 0 then
-    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].Equip[1]].Name, x + 20, y + 5 + FONT_HEIGHT * 13, ColColor($5), ColColor($7));
-
-  //计算秘笈需要经验
-  if Rrole[rnum].PracticeBook >= 0 then
+  if Rrole[rnum].PracticeMagic > 0 then
   begin
     mlevel := 1;
-    magicnum := Ritem[Rrole[rnum].PracticeBook].Magic;
+    magicnum := Rrole[rnum].PracticeMagic;
     if magicnum > 0 then
       for i := 0 to 9 do
         if Rrole[rnum].Magic[i] = magicnum then
@@ -4742,12 +5289,58 @@ begin
           mlevel := Rrole[rnum].MagLevel[i];
           break;
         end;
-    needexp := mlevel * Ritem[Rrole[rnum].PracticeBook].NeedExp * (7 - Rrole[rnum].Aptitude div 15);
-    DrawBig5ShadowText(screen, @Ritem[Rrole[rnum].PracticeBook].Name, x + 190, y + 5 + FONT_HEIGHT * 12, ColColor($5), ColColor($7));
-    str := format('%5d/%5d', [uint16(Rrole[rnum].ExpForBook), needexp]);
+    needexp := mlevel * RMagic[Rrole[rnum].PracticeMagic].NeedExp * (7 - Rrole[rnum].Aptitude div 15);
+    DrawBig5ShadowText(screen, @RMagic[Rrole[rnum].PracticeMagic].Name, x + 190, y + 5 + FONT_HEIGHT * 12, color1, color2);
+    str := format('%5d/%5d', [uint16(Rrole[rnum].ExpForMagic), needexp]);
     if mlevel = 10 then
-      str := format('%5d/=', [uint16(Rrole[rnum].ExpForBook)]);
+      str := format('%5d/=', [uint16(Rrole[rnum].ExpForMagic)]);
     DrawEngShadowText(screen, @str[1], x + 200, y + 5 + FONT_HEIGHT * 13, ColColor($64), ColColor($66));
+  end
+  else
+  begin
+    if display = 0 then
+    begin
+      str := '點擊選擇武功';
+      DrawShadowText(screen, @str[1], x + 190, y + 5 + FONT_HEIGHT * 12, color1, color2);
+    end;
+  end;
+
+  //内功修煉
+  if select = 7 then
+  begin
+    color1 := ColColor($64);
+    color2 := ColColor($66);
+  end
+  else
+  begin
+    color1 := ColColor($5);
+    color2 := ColColor($7);
+  end;
+  if Rrole[rnum].PracticeNeigong > 0 then
+  begin
+    mlevel := 1;
+    neigongnum := Rrole[rnum].PracticeNeigong;
+    if neigongnum > 0 then
+      for i := 0 to 9 do
+        if Rrole[rnum].Neigong[i] = neigongnum then
+        begin
+          mlevel := Rrole[rnum].NeigongLevel[i];
+          break;
+        end;
+    needexp := mlevel * RNeigong[Rrole[rnum].PracticeNeigong].NeedExp * (7 - Rrole[rnum].Aptitude div 15);
+    DrawBig5ShadowText(screen, @RNeigong[Rrole[rnum].PracticeNeigong].Name, x + 190, y + 5 + FONT_HEIGHT * 14, color1, color2);
+    str := format('%5d/%5d', [uint16(Rrole[rnum].ExpForNeigong), needexp]);
+    if mlevel = 10 then
+      str := format('%5d/=', [uint16(Rrole[rnum].ExpForNeigong)]);
+    DrawEngShadowText(screen, @str[1], x + 200, y + 5 + FONT_HEIGHT * 15, ColColor($64), ColColor($66));
+  end
+  else
+  begin
+    if display = 0 then
+    begin
+      str := '點擊選擇内功';
+      DrawShadowText(screen, @str[1], x + 190, y + 5 + FONT_HEIGHT * 14, color1, color2);
+    end;
   end;
 
   //顯示内功
@@ -4755,24 +5348,28 @@ begin
   for i := 0 to 4 do
   begin
     neigongnum := Rrole[rnum].Neigong[i];
-    if neigongnum >= 0 then
+    if neigongnum > 0 then
     begin
       if Rrole[rnum].ChanneledNeigong = i then
       begin
-        color1 := ColColor($14);
-        color2 := ColColor($16);
+        str := '*' + Big5ToUnicode(@RNeigong[neigongnum].Name) + '*';
+      end
+      else
+      begin
+        str := Big5ToUnicode(@RNeigong[neigongnum].Name);
+      end;
+      if (i = select - 10) then
+      begin
+        color1 := ColColor($64);
+        color2 := ColColor($66);
       end
       else
       begin
         color1 := ColColor($5);
         color2 := ColColor($7);
       end;
-      if (i = select - 10) then
-      begin
-        color1 := ColColor($64);
-        color2 := ColColor($66);
-      end;
-      DrawBig5ShadowText(screen, @RNeigong[neigongnum].Name, x + 360, y + 5 + FONT_HEIGHT * (12 + i), color1, color2);
+
+      DrawShadowText(screen, @str[1], x + 360, y + 5 + FONT_HEIGHT * (12 + i), color1, color2);
       str := format('%3d', [Rrole[rnum].NeigongLevel[i]]);
       DrawEngShadowText(screen, @str[1], x + 480, y + 5 + FONT_HEIGHT * (12 + i), ColColor($64), ColColor($66));
     end;
@@ -4795,15 +5392,15 @@ begin
   strs[2] := ('內力');
   strs[3] := ('體力');
 
-  DrawRectangle(screen, x, y, 145, 173, 0, ColColor(255), 50);
+  DrawRectangle(screen, x, y, 145, 175, 0, ColColor(255), 50);
   DrawHeadPic(Rrole[rnum].HeadNum, x + 50, y + 63);
   str := Big5ToUnicode(@Rrole[rnum].Name, 5);
-  DrawShadowText(screen, @str[1], x + 80 - DrawLength(str) * 5, y + 65, ColColor($64), ColColor($66));
+  DrawShadowText(screen, @str[1], x + 80 - DrawLength(str) * 5, y + 63, ColColor($64), ColColor($66));
   for i := 0 to 3 do
-    DrawShadowText(screen, @strs[i, 1], x + 3, y + 86 + FONT_HEIGHT * i, ColColor($21), ColColor($23));
+    DrawShadowText(screen, @strs[i, 1], x + 3, y + 85 + FONT_HEIGHT * i, ColColor($21), ColColor($23));
 
   str := format('%9d', [Rrole[rnum].Level]);
-  DrawEngShadowText(screen, @str[1], x + 50, y + 86, ColColor($5), ColColor($7));
+  DrawEngShadowText(screen, @str[1], x + 50, y + 85, ColColor($5), ColColor($7));
 
   case Rrole[rnum].Hurt of
     34..66:
@@ -4866,9 +5463,9 @@ begin
     color2 := ColColor($66);
   end;
   str := format('%4d/%4d', [Rrole[rnum].CurrentMP, Rrole[rnum].MaxMP]);
-  DrawEngShadowText(screen, @str[1], x + 50, y + 128, color1, color2);
+  DrawEngShadowText(screen, @str[1], x + 50, y + 129, color1, color2);
   str := format('%9d', [Rrole[rnum].PhyPower]);
-  DrawEngShadowText(screen, @str[1], x + 50, y + 149, ColColor($5), ColColor($7));
+  DrawEngShadowText(screen, @str[1], x + 50, y + 151, ColColor($5), ColColor($7));
 
   //SDL_UpdateRect2(screen, x, y, 146, 174);
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
@@ -5558,6 +6155,442 @@ begin
     SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
   end;
 
+end;
+
+function AddMagicAttributes(rnum, mnum: integer; times: integer = 1; display: integer = 1): integer;
+var
+  i, p, l, x, y, twoline, offset: integer;
+  word: array[0..23] of WideString;
+  addvalue, rolelist: array[0..23] of integer;
+  str: WideString;
+begin
+  rolelist[0] := 17;
+  rolelist[1] := 18;
+  rolelist[2] := 20;
+  rolelist[3] := 21;
+  rolelist[4] := 40;
+  rolelist[5] := 41;
+  rolelist[6] := 42;
+  rolelist[7] := 43;
+  rolelist[8] := 44;
+  rolelist[9] := 45;
+  rolelist[10] := 46;
+  rolelist[11] := 47;
+  rolelist[12] := 48;
+  rolelist[13] := 49;
+  rolelist[14] := 50;
+  rolelist[15] := 51;
+  rolelist[16] := 52;
+  rolelist[17] := 53;
+  rolelist[18] := 54;
+  rolelist[19] := 55;
+  rolelist[20] := 56;
+  rolelist[21] := 58;
+  rolelist[22] := 57;
+  rolelist[23] := 19;
+  offset := 33;
+
+  for i := 0 to 22 do
+  begin
+    if (i <> 4) and (i <> 21) then
+      addvalue[i] := RMagic[mnum].Data[offset + i] * times
+    else
+      addvalue[i] := RMagic[mnum].Data[offset + i];
+  end;
+  //减少受伤
+  addvalue[23] := -(addvalue[0] div LIFE_HURT);
+
+  if -addvalue[23] > Rrole[rnum].Data[19] then
+    addvalue[23] := -Rrole[rnum].Data[19];
+
+  //增加生命, 内力最大值的处理
+  if addvalue[1] + Rrole[rnum].Data[18] > MAX_HP then
+    addvalue[1] := MAX_HP - Rrole[rnum].Data[18];
+  if addvalue[6] + Rrole[rnum].Data[42] > MAX_MP then
+    addvalue[6] := MAX_MP - Rrole[rnum].Data[42];
+  if addvalue[1] + Rrole[rnum].Data[18] < 0 then
+    addvalue[1] := -Rrole[rnum].Data[18];
+  if addvalue[6] + Rrole[rnum].Data[42] < 0 then
+    addvalue[6] := -Rrole[rnum].Data[42];
+
+  //仅控制不为零的项目
+  for i := 7 to 22 do
+  begin
+    if addvalue[i] <> 0 then
+    begin
+      if addvalue[i] + Rrole[rnum].Data[rolelist[i]] > MaxProList[rolelist[i]] then
+        addvalue[i] := MaxProList[rolelist[i]] - Rrole[rnum].Data[rolelist[i]];
+      if addvalue[i] + Rrole[rnum].Data[rolelist[i]] < 0 then
+        addvalue[i] := -Rrole[rnum].Data[rolelist[i]];
+    end;
+  end;
+  //生命不能超过最大值
+  if addvalue[0] + Rrole[rnum].Data[17] > addvalue[1] + Rrole[rnum].Data[18] then
+    addvalue[0] := addvalue[1] + Rrole[rnum].Data[18] - Rrole[rnum].Data[17];
+  //中毒不能小于0
+  if addvalue[2] + Rrole[rnum].Data[20] < 0 then
+    addvalue[2] := -Rrole[rnum].Data[20];
+  //体力不能超过100
+  if addvalue[3] + Rrole[rnum].Data[21] > MAX_PHYSICAL_POWER then
+    addvalue[3] := MAX_PHYSICAL_POWER - Rrole[rnum].Data[21];
+  //内力不能超过最大值
+  if addvalue[5] + Rrole[rnum].Data[41] > addvalue[6] + Rrole[rnum].Data[42] then
+    addvalue[5] := addvalue[6] + Rrole[rnum].Data[42] - Rrole[rnum].Data[41];
+  p := 0;
+  for i := 0 to 23 do
+  begin
+    if (i <> 4) and (i <> 21) and (addvalue[i] <> 0) then
+      p := p + 1;
+  end;
+  //内力属性
+  if (addvalue[4] = 2) and (Rrole[rnum].Data[40] <> 2) then
+    p := p + 1;
+  //左右互搏
+  if (addvalue[21] = 1) and (Rrole[rnum].Data[58] <> 1) then
+    p := p + 1;
+
+  //对次数的修正
+  Result := 0;
+  for i := 0 to 22 do
+  begin
+    if (RMagic[mnum].Data[offset + i] <> 0) and (i <> 4) and (i <> 21) then
+    begin
+      Result := max(Result, ceil(abs(addvalue[i] / RMagic[mnum].Data[offset + i])));
+    end;
+  end;
+  Result := min(times, Result);
+  if p = 0 then
+    Result := 0;
+
+  if display <> 0 then
+  begin
+    word[0] := ('增加生命');
+    word[1] := ('增加生命最大值');
+    word[2] := ('中毒程度');
+    word[3] := ('增加體力');
+    word[4] := ('內力門路陰陽合一');
+    word[5] := ('增加內力');
+    word[6] := ('增加內力最大值');
+    word[7] := ('增加攻擊力');
+    word[8] := ('增加輕功');
+    word[9] := ('增加防禦力');
+    word[10] := ('增加醫療能力');
+    word[11] := ('增加用毒能力');
+    word[12] := ('增加解毒能力');
+    word[13] := ('增加抗毒能力');
+    word[14] := ('增加拳掌能力');
+    word[15] := ('增加御劍能力');
+    word[16] := ('增加耍刀能力');
+    word[17] := ('增加特殊兵器');
+    word[18] := ('增加暗器技巧');
+    word[19] := ('增加武學常識');
+    word[20] := ('增加品德指數');
+    word[21] := ('習得左右互搏');
+    word[22] := ('增加攻擊帶毒');
+    word[23] := ('受傷程度');
+
+    DrawRectangle(screen, 100, 70, 100 + length(pchar(@RMagic[mnum].Name)) * 10, 25, 0, ColColor(255), 50);
+    str := UTF8Decode(format('練成%d次', [Result]));
+    DrawShadowText(screen, @str[1], 103, 72, ColColor($21), ColColor($23));
+    DrawBig5ShadowText(screen, @RMagic[mnum].Name, 193, 72, ColColor($64), ColColor($66));
+
+    //如果增加的项超过11个, 分两列显示
+    if p < 11 then
+    begin
+      l := p;
+      twoline := 0;
+      DrawRectangle(screen, 100, 100, 200, FONT_HEIGHT * l + 25, 0, ColColor($FF), 50);
+    end
+    else
+    begin
+      l := p div 2 + p mod 2;
+      twoline := 1;
+      DrawRectangle(screen, 20, 100, 400, FONT_HEIGHT * l + 25, 0, ColColor($FF), 50);
+    end;
+    if twoline = 0 then
+      x := 83
+    else
+      x := 3;
+    DrawBig5ShadowText(screen, @Rrole[rnum].Data[4], x + 20, 102, ColColor($21), ColColor($23));
+    if p = 0 then
+    begin
+      str := ('未增加屬性');
+      DrawShadowText(screen, @str[1], 183, 102, ColColor(5), ColColor(7));
+    end;
+    p := 0;
+    for i := 0 to 23 do
+    begin
+      if twoline = 0 then
+      begin
+        x := 0;
+        y := 0;
+      end
+      else
+      begin
+        if p < l then
+        begin
+          x := -80;
+          y := 0;
+        end
+        else
+        begin
+          x := 120;
+          y := -l * FONT_HEIGHT;
+        end;
+      end;
+      if (i <> 4) and (i <> 21) and (addvalue[i] <> 0) then
+      begin
+        Rrole[rnum].Data[rolelist[i]] := Rrole[rnum].Data[rolelist[i]] + addvalue[i];
+        DrawShadowText(screen, @word[i, 1], 103 + x, 124 + y + p * FONT_HEIGHT, ColColor(5), ColColor(7));
+        str := format('%4d', [addvalue[i]]);
+        DrawEngShadowText(screen, @str[1], 243 + x, 124 + y + p * FONT_HEIGHT, ColColor($64), ColColor($66));
+        p := p + 1;
+      end;
+      //对内力性质特殊处理
+      if (i = 4) and (addvalue[i] = 2) then
+      begin
+        if Rrole[rnum].Data[rolelist[i]] <> 2 then
+        begin
+          Rrole[rnum].Data[rolelist[i]] := 2;
+          DrawShadowText(screen, @word[i, 1], 103 + x, 124 + y + p * FONT_HEIGHT, ColColor(5), ColColor(7));
+          p := p + 1;
+        end;
+      end;
+      //对左右互搏特殊处理
+      if (i = 21) and (addvalue[i] = 1) then
+      begin
+        if Rrole[rnum].Data[rolelist[i]] <> 1 then
+        begin
+          Rrole[rnum].Data[rolelist[i]] := 1;
+          DrawShadowText(screen, @word[i, 1], 103 + x, 124 + y + p * FONT_HEIGHT, ColColor(5), ColColor(7));
+          p := p + 1;
+        end;
+      end;
+    end;
+    x := 350;
+    if twoline = 1 then
+      x := 440;
+    ShowSimpleStatus(rnum, x, 100);
+    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+  end;
+end;
+
+function AddNeigongAttributes(rnum, ngnum: integer; times: integer = 1; display: integer = 1): integer;
+var
+  i, p, l, x, y, twoline, offset: integer;
+  word: array[0..23] of WideString;
+  addvalue, rolelist: array[0..23] of integer;
+  str: WideString;
+begin
+  rolelist[0] := 17;
+  rolelist[1] := 18;
+  rolelist[2] := 20;
+  rolelist[3] := 21;
+  rolelist[4] := 40;
+  rolelist[5] := 41;
+  rolelist[6] := 42;
+  rolelist[7] := 43;
+  rolelist[8] := 44;
+  rolelist[9] := 45;
+  rolelist[10] := 46;
+  rolelist[11] := 47;
+  rolelist[12] := 48;
+  rolelist[13] := 49;
+  rolelist[14] := 50;
+  rolelist[15] := 51;
+  rolelist[16] := 52;
+  rolelist[17] := 53;
+  rolelist[18] := 54;
+  rolelist[19] := 55;
+  rolelist[20] := 56;
+  rolelist[21] := 58;
+  rolelist[22] := 57;
+  rolelist[23] := 19;
+  offset := 53;
+
+  for i := 0 to 22 do
+  begin
+    if (i <> 4) and (i <> 21) then
+      addvalue[i] := RNeigong[ngnum].Data[offset + i] * times
+    else
+      addvalue[i] := RNeigong[ngnum].Data[offset + i];
+  end;
+  //减少受伤
+  addvalue[23] := -(addvalue[0] div LIFE_HURT);
+
+  if -addvalue[23] > Rrole[rnum].Data[19] then
+    addvalue[23] := -Rrole[rnum].Data[19];
+
+  //增加生命, 内力最大值的处理
+  if addvalue[1] + Rrole[rnum].Data[18] > MAX_HP then
+    addvalue[1] := MAX_HP - Rrole[rnum].Data[18];
+  if addvalue[6] + Rrole[rnum].Data[42] > MAX_MP then
+    addvalue[6] := MAX_MP - Rrole[rnum].Data[42];
+  if addvalue[1] + Rrole[rnum].Data[18] < 0 then
+    addvalue[1] := -Rrole[rnum].Data[18];
+  if addvalue[6] + Rrole[rnum].Data[42] < 0 then
+    addvalue[6] := -Rrole[rnum].Data[42];
+
+  //仅控制不为零的项目
+  for i := 7 to 22 do
+  begin
+    if addvalue[i] <> 0 then
+    begin
+      if addvalue[i] + Rrole[rnum].Data[rolelist[i]] > MaxProList[rolelist[i]] then
+        addvalue[i] := MaxProList[rolelist[i]] - Rrole[rnum].Data[rolelist[i]];
+      if addvalue[i] + Rrole[rnum].Data[rolelist[i]] < 0 then
+        addvalue[i] := -Rrole[rnum].Data[rolelist[i]];
+    end;
+  end;
+  //生命不能超过最大值
+  if addvalue[0] + Rrole[rnum].Data[17] > addvalue[1] + Rrole[rnum].Data[18] then
+    addvalue[0] := addvalue[1] + Rrole[rnum].Data[18] - Rrole[rnum].Data[17];
+  //中毒不能小于0
+  if addvalue[2] + Rrole[rnum].Data[20] < 0 then
+    addvalue[2] := -Rrole[rnum].Data[20];
+  //体力不能超过100
+  if addvalue[3] + Rrole[rnum].Data[21] > MAX_PHYSICAL_POWER then
+    addvalue[3] := MAX_PHYSICAL_POWER - Rrole[rnum].Data[21];
+  //内力不能超过最大值
+  if addvalue[5] + Rrole[rnum].Data[41] > addvalue[6] + Rrole[rnum].Data[42] then
+    addvalue[5] := addvalue[6] + Rrole[rnum].Data[42] - Rrole[rnum].Data[41];
+  p := 0;
+  for i := 0 to 23 do
+  begin
+    if (i <> 4) and (i <> 21) and (addvalue[i] <> 0) then
+      p := p + 1;
+  end;
+  //内力属性
+  if (addvalue[4] = 2) and (Rrole[rnum].Data[40] <> 2) then
+    p := p + 1;
+  //左右互搏
+  if (addvalue[21] = 1) and (Rrole[rnum].Data[58] <> 1) then
+    p := p + 1;
+
+  //对次数的修正
+  Result := 0;
+  for i := 0 to 22 do
+  begin
+    if (RNeigong[ngnum].Data[offset + i] <> 0) and (i <> 4) and (i <> 21) then
+    begin
+      Result := max(Result, ceil(abs(addvalue[i] / RNeigong[ngnum].Data[offset + i])));
+    end;
+  end;
+  Result := min(times, Result);
+  if p = 0 then
+    Result := 0;
+
+  if display <> 0 then
+  begin
+    word[0] := ('增加生命');
+    word[1] := ('增加生命最大值');
+    word[2] := ('中毒程度');
+    word[3] := ('增加體力');
+    word[4] := ('內力門路陰陽合一');
+    word[5] := ('增加內力');
+    word[6] := ('增加內力最大值');
+    word[7] := ('增加攻擊力');
+    word[8] := ('增加輕功');
+    word[9] := ('增加防禦力');
+    word[10] := ('增加醫療能力');
+    word[11] := ('增加用毒能力');
+    word[12] := ('增加解毒能力');
+    word[13] := ('增加抗毒能力');
+    word[14] := ('增加拳掌能力');
+    word[15] := ('增加御劍能力');
+    word[16] := ('增加耍刀能力');
+    word[17] := ('增加特殊兵器');
+    word[18] := ('增加暗器技巧');
+    word[19] := ('增加武學常識');
+    word[20] := ('增加品德指數');
+    word[21] := ('習得左右互搏');
+    word[22] := ('增加攻擊帶毒');
+    word[23] := ('受傷程度');
+
+    DrawRectangle(screen, 100, 70, 100 + length(pchar(@RNeigong[ngnum].Name)) * 10, 25, 0, ColColor(255), 50);
+    str := UTF8Decode(format('練成%d次', [Result]));
+    DrawShadowText(screen, @str[1], 103, 72, ColColor($21), ColColor($23));
+    DrawBig5ShadowText(screen, @RNeigong[ngnum].Name, 193, 72, ColColor($64), ColColor($66));
+
+    //如果增加的项超过11个, 分两列显示
+    if p < 11 then
+    begin
+      l := p;
+      twoline := 0;
+      DrawRectangle(screen, 100, 100, 200, FONT_HEIGHT * l + 25, 0, ColColor($FF), 50);
+    end
+    else
+    begin
+      l := p div 2 + p mod 2;
+      twoline := 1;
+      DrawRectangle(screen, 20, 100, 400, FONT_HEIGHT * l + 25, 0, ColColor($FF), 50);
+    end;
+    if twoline = 0 then
+      x := 83
+    else
+      x := 3;
+    DrawBig5ShadowText(screen, @Rrole[rnum].Data[4], x + 20, 102, ColColor($21), ColColor($23));
+    if p = 0 then
+    begin
+      str := ('未增加屬性');
+      DrawShadowText(screen, @str[1], 183, 102, ColColor(5), ColColor(7));
+    end;
+    p := 0;
+    for i := 0 to 23 do
+    begin
+      if twoline = 0 then
+      begin
+        x := 0;
+        y := 0;
+      end
+      else
+      begin
+        if p < l then
+        begin
+          x := -80;
+          y := 0;
+        end
+        else
+        begin
+          x := 120;
+          y := -l * FONT_HEIGHT;
+        end;
+      end;
+      if (i <> 4) and (i <> 21) and (addvalue[i] <> 0) then
+      begin
+        Rrole[rnum].Data[rolelist[i]] := Rrole[rnum].Data[rolelist[i]] + addvalue[i];
+        DrawShadowText(screen, @word[i, 1], 103 + x, 124 + y + p * FONT_HEIGHT, ColColor(5), ColColor(7));
+        str := format('%4d', [addvalue[i]]);
+        DrawEngShadowText(screen, @str[1], 243 + x, 124 + y + p * FONT_HEIGHT, ColColor($64), ColColor($66));
+        p := p + 1;
+      end;
+      //对内力性质特殊处理
+      if (i = 4) and (addvalue[i] = 2) then
+      begin
+        if Rrole[rnum].Data[rolelist[i]] <> 2 then
+        begin
+          Rrole[rnum].Data[rolelist[i]] := 2;
+          DrawShadowText(screen, @word[i, 1], 103 + x, 124 + y + p * FONT_HEIGHT, ColColor(5), ColColor(7));
+          p := p + 1;
+        end;
+      end;
+      //对左右互搏特殊处理
+      if (i = 21) and (addvalue[i] = 1) then
+      begin
+        if Rrole[rnum].Data[rolelist[i]] <> 1 then
+        begin
+          Rrole[rnum].Data[rolelist[i]] := 1;
+          DrawShadowText(screen, @word[i, 1], 103 + x, 124 + y + p * FONT_HEIGHT, ColColor(5), ColColor(7));
+          p := p + 1;
+        end;
+      end;
+    end;
+    x := 350;
+    if twoline = 1 then
+      x := 440;
+    ShowSimpleStatus(rnum, x, 100);
+    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+  end;
 end;
 
 //Event.

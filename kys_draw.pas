@@ -1314,7 +1314,7 @@ begin
       break;
     end;
   end;
-  DrawBRolePic(rnum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
+  DrawBRolePic(RRole[rnum].HeadNum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
     pos.x, pos.y, 0, Alpha, depth, mixColor, mixAlpha);
 end;
 
@@ -1474,10 +1474,10 @@ begin
       if (bnum >= 0) and (Brole[bnum].Dead = 0) then
       begin
         if (Brole[bnum].Team <> Brole[Bfield[2, Bx, By]].Team) and (Bfield[4, i1, i2] > 0) then
-          DrawBRolePic(rnum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
+          DrawBRolePic(Rrole[rnum].HeadNum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
             pos.x, pos.y, 0, 75, CalBlock(i1, i2), $FFFFFFFF, 20)
         else
-          DrawBRolePic(rnum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
+          DrawBRolePic(Rrole[rnum].HeadNum, Brole[bnum].Face * Rrole[rnum].AmiFrameNum[animode],
             pos.x, pos.y, 0, 75, CalBlock(i1, i2), 0, 0);
       end;
     end;

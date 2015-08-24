@@ -61,13 +61,16 @@ type
         AmiFrameNum, AmiDelay, SoundDealy: array[0..4] of smallint;
         MPType, CurrentMP, MaxMP: smallint;
         Attack, Speed, Defence, Medcine, UsePoi, MedPoi, DefPoi, Fist, Sword, Knife, Unusual, HidWeapon: smallint;
-        Knowledge, Ethics, AttPoi, AttTwice, Repute, Aptitude, PracticeBook: smallint;
-        ExpForBook: word;
+        Knowledge, Ethics, AttPoi, AttTwice, Repute, Aptitude: smallint;
+        PracticeMagic: smallint;
+        ExpForMagic: word;
+        PracticeNeigong: smallint;
+        ExpForNeigong: word;
         Magic, MagLevel: array[0..9] of smallint;
         Neigong, NeigongLevel: array[0..4] of smallint;
         ChanneledNeigong: smallint;
         TakingItem, TakingItemAmount: array[0..3] of smallint);
-      Address: (Data: array[0..101] of smallint);
+      Address: (Data: array[0..103] of smallint);
   end;
 
   TItem = record
@@ -111,7 +114,7 @@ type
         AddAttack, AddSpeed, AddDefence, AddMedcine, AddUsePoi, AddMedPoi, AddDefPoi: smallint;
         AddFist, AddSword, AddKnife, AddUnusual, AddHidWeapon, AddKnowledge, AddEthics,
         AddAttTwice, AddAttPoi: smallint;
-        OnlyPracRole, NeedMPType, NeedMaxMP, NeedAttack, NeedSpeed, NeedUsePoi, NeedMedcine, NeedMedPoi: smallint;
+        OnlyPracRole, NeedMPType, NeedMP, NeedAttack, NeedSpeed, NeedUsePoi, NeedMedcine, NeedMedPoi: smallint;
         NeedFist, NeedSword, NeedKnife, NeedUnusual, NeedHidWeapon, NeedAptitude: smallint;
         NeedExp: smallint);
       Address: (Data: array[0..69] of smallint);
@@ -134,16 +137,18 @@ type
       Element: (ListNum: smallint;
         Name: array[0..19] of char;
         Introduction: array[0..29] of char;
+        AttackName, DefenceName: array[0..19] of char;
         CanLearn: smallint;
         UnKnow: array[0..3] of smallint;
+        SoundNum, AmiNum: smallint;
         AddCurrentHP, AddMaxHP, AddPoi, AddPhyPower, ChangeMPType, AddCurrentMP, AddMaxMP: smallint;
         AddAttack, AddSpeed, AddDefence, AddMedcine, AddUsePoi, AddMedPoi, AddDefPoi: smallint;
         AddFist, AddSword, AddKnife, AddUnusual, AddHidWeapon, AddKnowledge, AddEthics,
         AddAttTwice, AddAttPoi: smallint;
-        OnlyPracRole, NeedMPType, NeedMaxMP, NeedAttack, NeedSpeed, NeedUsePoi, NeedMedcine, NeedMedPoi: smallint;
-        NeedFist, NeedSword, NeedKnife, NeedUnusual, NeedHidWeapon, NeedAptitude: smallint;
+        OnlyPracRole, NeedMPType, NeedMP, NeedAttack, NeedSpeed, NeedDefence, NeedUsePoi, NeedAptitude: smallint;
+        RestoreHP, CurePoison, AttackPower, DefencePower, Activation, Special: smallint;
         NeedExp: smallint);
-      Address: (Data: array[0..67] of smallint);
+      Address: (Data: array[0..89] of smallint);
   end;
 
   TShop = record
@@ -154,10 +159,10 @@ type
 
   TBattleRole = record
     case TCallType of
-      Element: (rnum, Team, Y, X, Face, Dead, Step, Acted: smallint;
+      Element: (rnum, Team, Y, X, Face, Dead, Step, Acted, NeigongCheck: smallint;
         Pic, ShowNumber, UnUse1, UnUse2, UnUse3, ExpGot, Auto: smallint;
         RealSpeed, RealProgress, BHead, AutoMode: smallint);
-      Address: (Data: array[0..18] of smallint);
+      Address: (Data: array[0..19] of smallint);
   end;
 
   TCol = record
@@ -297,10 +302,10 @@ var
   MAX_WEAPON_MATCH: integer = 7; //'武功武器配合'组合的数量
   MIN_KNOWLEDGE: integer = 80; //最低有效武学常识
   MAX_ITEM_AMOUNT: integer = 200; //最大物品数量
-  MAX_HP: integer = 999; //最大生命
-  MAX_MP: integer = 999; //最大内功
-  MaxProList: array[43..58] of integer = (100, 100, 100, 100, 100, 100, 100, 100, 100, 100,
-    100, 100, 100, 100, 100, 1);
+  MAX_HP: integer = 9999; //最大生命
+  MAX_MP: integer = 9999; //最大内功
+  MaxProList: array[43..58] of integer = (255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
+    255, 255, 100, 100, 100, 1);
   //最大攻击值~最大左右互博值
   LIFE_HURT: integer = 10; //伤害值比例
   POISON_HURT: integer = 10; //中毒损血比例
@@ -485,8 +490,11 @@ var
   //当前人物坐标, 选择目标的坐标
   Bstatus: integer;
   //战斗状态, 0-继续, 1-胜利, 2-失败
+  AnimationMode: integer = 0;
+  //動畫状态, 0-無, 1-招式, 2-内功
+  StyleString, NeigongString: WideString;
   MagicAmount, StylesAmount, NeigongAmount: integer;
-  // 武功總數，内功總數
+  // 武功總數，招式總數，内功總數
 
   //寻路使用的变量表
   linex, liney: array[0..480 * 480 - 1] of smallint;

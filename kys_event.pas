@@ -99,7 +99,7 @@ procedure StudyMagic(rnum, magicnum, newmagicnum, level, dismode: integer);
 procedure NewTalk(headnum, talknum, namenum, place, showhead, color, frame: integer);
 function EnterNumber(MinValue, MaxValue, x, y: integer; Default: integer = 0): smallint;
 procedure SetAttribute(rnum, selecttype, modlevel, minlevel, maxlevel: integer);
-
+procedure LearnNeigong(rnum, ngnum, dismode: integer);
 
 
 implementation
@@ -950,10 +950,10 @@ begin
     if (Rrole[rnum].Magic[i] <= 0) or (Rrole[rnum].Magic[i] = magicnum) then
     begin
       if Rrole[rnum].Magic[i] > 0 then
-        Rrole[rnum].Maglevel[i] := Rrole[rnum].Maglevel[i] + 100;
+        Rrole[rnum].Maglevel[i] := Rrole[rnum].Maglevel[i] + 1;
       Rrole[rnum].Magic[i] := magicnum;
-      if Rrole[rnum].MagLevel[i] > 999 then
-        Rrole[rnum].Maglevel[i] := 999;
+      if Rrole[rnum].MagLevel[i] > 10 then
+        Rrole[rnum].Maglevel[i] := 10;
       break;
     end;
   end;
@@ -2989,6 +2989,37 @@ begin
 
 end;
 
+//学到内功, 如果已有武功则升级, 如果已满10个不会洗武功
 
+procedure LearnNeigong(rnum, ngnum, dismode: integer);
+var
+  i: integer;
+  word: WideString;
+begin
+  for i := 0 to 9 do
+  begin
+    if (Rrole[rnum].Neigong[i] <= 0) or (Rrole[rnum].Neigong[i] = ngnum) then
+    begin
+      if Rrole[rnum].Neigong[i] > 0 then
+        Rrole[rnum].NeigongLevel[i] := Rrole[rnum].NeigongLevel[i] + 1;
+      Rrole[rnum].Neigong[i] := ngnum;
+      if Rrole[rnum].NeigongLevel[i] > 10 then
+        Rrole[rnum].NeigongLevel[i] := 10;
+      break;
+    end;
+  end;
+  //if i = 10 then rrole[rnum].data[i+63] := ngnum;
+  if dismode = 0 then
+  begin
+    DrawRectangle(screen, CENTER_X - 75, 98, 145, 76, 0, ColColor(255), 50);
+    word := ('學會');
+    DrawShadowText(screen, @word[1], CENTER_X - 70, 125, ColColor($5), ColColor($7));
+    DrawBig5ShadowText(screen, @Rrole[rnum].Name, CENTER_X - 70, 100, ColColor($21), ColColor($23));
+    DrawBig5ShadowText(screen, @RNeigong[ngnum].Name, CENTER_X - 70, 150, ColColor($64), ColColor($66));
+    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+    WaitAnyKey;
+    Redraw;
+  end;
+end;
 
 end.
