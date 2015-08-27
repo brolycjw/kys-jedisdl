@@ -332,7 +332,7 @@ var
   RItem: array[0..724] of TItem;
   Rscence: array[0..200] of TScence;
   RMagic: array[0..998] of TMagic;
-  RStyles: array[0..1499] of TStyles;
+  RStyles: array[0..998] of TStyles;
   RNeigong: array[0..100] of TNeigong;
   RShop: array[0..10] of TShop;
   //R文件数据, 均远大于原有容量
@@ -493,7 +493,7 @@ var
   AnimationMode: integer = 0;
   //動畫状态, 0-無, 1-招式, 2-内功
   StyleString, NeigongString: WideString;
-  MagicAmount, StylesAmount, NeigongAmount: integer;
+  ScenceAmount, MagicAmount, StylesAmount, NeigongAmount: integer;
   // 武功總數，招式總數，内功總數
 
   //寻路使用的变量表
@@ -534,6 +534,8 @@ var
   VirtualKeyX: integer = 150;
   VirtualKeyY: integer = 250;
   VIrtualKeySize: integer = 60;
+
+  RealPosArray, VirtualPosArray: array of array of integer;
 
 const
   //色值蒙版, 注意透明蒙版在创建RGB表面时需设为0

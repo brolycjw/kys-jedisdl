@@ -133,6 +133,13 @@ procedure MenuLoad;
 function MenuLoadAtBeginning: integer;
 procedure MenuSave;
 procedure MenuQuit;
+procedure MenuTravel;
+procedure ShowTravelMap(x, y: integer);
+procedure ShowTravelLocations(select: integer = -1);
+function GetLocationSelect(x, y: integer): integer;
+procedure CalcVirtualPos(x, y: integer);
+function CalcScreenX(x, y: integer): integer;
+function CalcScreenY(x, y: integer): integer;
 
 //医疗, 解毒, 使用物品的效果等
 function EffectMedcine(role1, role2: integer): integer;
@@ -921,7 +928,7 @@ end;
 procedure LoadR(num: integer);
 var
   filename: string;
-  idx, grp, i1, i2, len, ScenceAmount: integer;
+  idx, grp, i1, i2, len: integer;
   BasicOffset, RoleOffset, ItemOffset, ScenceOffset, MagicOffset, StyleOffset, NeigongOffset, WeiShopOffset, i: integer;
 begin
   SaveNum := num;
@@ -974,18 +981,19 @@ begin
   FileClose(idx);
   FileClose(grp);
 
+  ScenceAmount := (MagicOffset - ScenceOffset) div 52;
   MagicAmount := (StyleOffset - MagicOffset) div 140;
   StylesAmount := (NeigongOffset - StyleOffset) div 176;
   NeigongAmount := (WeiShopOffset - NeigongOffset) div 180;
   if IsConsole then
   begin
+    writeln('ScenceAmount ', MagicAmount);
     writeln('MagicAmount ', MagicAmount);
-    writeln('StylesAmount', StylesAmount);
-    writeln('NeigongAmount', NeigongAmount);
+    writeln('StylesAmount ', StylesAmount);
+    writeln('NeigongAmount ', NeigongAmount);
   end;
 
   //初始化入口
-  ScenceAmount := (MagicOffset - ScenceOffset) div 52;
   for i := 0 to ScenceAmount - 1 do
   begin
     if (Rscence[i].MainEntranceX1 >= 0) and (Rscence[i].MainEntranceX1 < 480) and
@@ -1027,7 +1035,7 @@ end;
 procedure SaveR(num: integer);
 var
   filename: string;
-  idx, grp, i1, i2, length, ScenceAmount: integer;
+  idx, grp, i1, i2, length: integer;
   BasicOffset, RoleOffset, ItemOffset, ScenceOffset, MagicOffset, StyleOffset, NeigongOffset, WeiShopOffset, i: integer;
 begin
   SaveNum := num;
@@ -1079,8 +1087,6 @@ begin
   FileWrite(grp, Rshop[0], length - WeiShopOffset);
   FileClose(idx);
   FileClose(grp);
-
-  ScenceAmount := (MagicOffset - ScenceOffset) div 52;
 
   filename := 's' + IntToStr(num);
   if num = 0 then
@@ -2948,7 +2954,7 @@ end;
 
 procedure MenuEsc;
 var
-  word: array[0..5] of WideString;
+  word: array[0..6] of WideString;
   i: integer;
 begin
   NeedRefreshScence := 0;
@@ -2958,31 +2964,20 @@ begin
   word[3] := ('狀態');
   word[4] := ('離隊');
   word[5] := ('系統');
-  if MODVersion = 22 then
-    word[4] := ('特殊');
+  word[6] := ('傳送');
 
   i := 0;
   while i >= 0 do
   begin
-    i := CommonMenu(27, 30, 46, 5, i, word);
+    i := CommonMenu(27, 30, 46, 6, i, word);
     case i of
       0: MenuMedcine;
       1: MenuMedPoison;
       2: MenuItem;
-      5: MenuSystem;
+      3: MenuStatus;
       4: MenuLeave;
-      3:
-      begin
-        if MODVersion = 51 then
-        begin
-          //ReFreshScreen;
-          CallEvent(1092);
-          Redraw;
-          SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
-        end
-        else
-          MenuStatus;
-      end;
+      5: MenuSystem;
+      6: MenuTravel;
     end;
     Redraw;
     SDL_UpdateRect2(screen, 80, 0, screen.w - 80, screen.h);
@@ -3102,8 +3097,6 @@ begin
   word[3] := ('狀態');
   word[4] := ('離隊');
   word[5] := ('系統');
-  if MODVersion = 22 then
-    word[4] := ('特殊');
   if where = 0 then
     max := 5
   else
@@ -5898,6 +5891,214 @@ begin
     Redraw;
   end;
 
+end;
+
+procedure MenuTravel;
+var
+  i, startx, starty, screenx, screeny: integer;
+  prevx, prevy, curx, cury, changex, changey: integer;
+  prevselect, curselect: integer;
+  startdrag: boolean;
+begin
+  SetLength(RealPosArray, ScenceAmount, 2);
+  SetLength(VirtualPosArray, ScenceAmount, 2);
+
+  prevx := 0;
+  prevy := 0;
+  curx := 0;
+  cury := 0;
+  changex := 0;
+  changey := 0;
+  prevselect := -1;
+  curselect := -1;
+  startdrag := false;
+
+  startx := -2170;
+  starty := -1088;
+
+  // initialize RealPosArray
+  for i := 0 to ScenceAmount - 1 do
+  begin
+    WriteLn(i, 'Before: ', RScence[i].MainEntranceY1, ', ', RScence[i].MainEntranceX1);
+    RealPosArray[i][0] := CalcScreenX(RScence[i].MainEntranceY1, RScence[i].MainEntranceX1);
+    RealPosArray[i][1] := CalcScreenY(RScence[i].MainEntranceY1, RScence[i].MainEntranceX1);
+    WriteLn(i, 'After: ', RealPosArray[i][0], ', ', RealPosArray[i][1]);
+  end;
+  CalcVirtualPos(startx, starty);
+
+  ShowTravelMap(startx, starty);
+  ShowTravelLocations;
+
+  while (SDL_WaitEvent(@event) >= 0) do
+  begin
+    CheckBasicEvent;
+    case event.type_ of
+      SDL_KEYUP:
+      begin
+        if (event.key.keysym.sym = SDLK_ESCAPE) then
+        begin
+          break;
+        end;
+      end;
+      SDL_MOUSEBUTTONUP:
+      begin
+        if (event.button.button = SDL_BUTTON_RIGHT) {and (where <= 2)} then
+        begin
+          if (curselect >= 0) then
+          begin
+            instruct_14;
+            Mx := RScence[curselect].MainEntranceX1;
+            My := RScence[curselect].MainEntranceY1;
+            instruct_13;
+            break;
+          end
+        end;
+        if (event.button.button = SDL_BUTTON_LEFT) then
+        begin
+          startdrag := false;
+        end;
+      end;
+      SDL_MOUSEBUTTONDOWN:
+      begin
+        if (event.button.button = SDL_BUTTON_LEFT) then
+        begin
+          prevx := event.button.x;
+          prevy := event.button.y;
+          startdrag := true;
+        end;
+      end;
+      SDL_MOUSEMOTION:
+      begin
+        if (SDL_GetMouseState(nil, nil) and SDL_BUTTON_LMASK) <> 0 then
+        begin
+          if startdrag then
+          begin
+            curx := event.button.x;
+            cury := event.button.y;
+            changex := sign(curx) * (abs(curx) - abs(prevx));
+            changey := sign(cury) * (abs(cury) - abs(prevy));
+            startx := startx + changex;
+            starty := starty + changey;
+            if startx > -100 then
+            begin
+              startx := -100;
+            end
+            else if startx < -3700 then
+              startx := -3700;
+            if starty > -20 then
+            begin
+              starty := -20;
+            end
+            else if starty < -1735 then
+              starty := -1735;
+
+            ShowTravelMap(startx, starty);
+            CalcVirtualPos(startx, starty);
+            ShowTravelLocations;
+            prevx := curx;
+            prevy := cury;
+          end;
+        end
+        else
+        begin
+          curx := round(event.button.x / (resolutionx / screen.w));
+          cury := round(event.button.y / (resolutiony / screen.h));
+          curselect := GetLocationSelect(curx, cury);
+          if curselect <> prevselect then
+          begin
+            ShowTravelLocations(curselect);
+          end;
+          prevselect := curselect;
+        end;
+      end;
+    end;
+  end;
+
+  //清空键盘键和鼠标键值, 避免影响其余部分
+  event.key.keysym.sym := 0;
+  event.button.button := 0;
+
+end;
+
+procedure ShowTravelMap(x, y: integer);
+begin
+  SDL_FillRect(screen, nil, 0);
+  display_img(pchar(AppPath + 'resource/map.png'), x, y);
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+end;
+
+procedure ShowTravelLocations(select: integer = -1);
+var
+  i, color1, color2: integer;
+  str: WideString;
+begin
+
+  for i := 0 to ScenceAmount - 1 do
+  begin
+    if select = i then
+    begin
+      color1 := ColColor($64);
+      color2 := ColColor($66);
+    end
+    else
+    begin
+      color1 := ColColor($21);
+      color2 := ColColor($23);
+    end;
+    DrawRectangle(screen, VirtualPosArray[i][0], VirtualPosArray[i][1], 10, 10, color1, color2, 100);
+    str := Format('%d', [i]);
+    DrawShadowText(@str[1], VirtualPosArray[i][0], VirtualPosArray[i][1] + 5, color1, color2);
+  end;
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+end;
+
+function GetLocationSelect(x, y: integer): integer;
+var
+  i, distance: integer;
+begin
+  Result := -1;
+  for i := 0 to ScenceAmount - 1 do
+  begin
+    if (abs(abs(VirtualPosArray[i][0]) - abs(x)) < 10) and (abs(abs(VirtualPosArray[i][1]) - abs(y)) < 10) then
+    begin
+      Result := i;
+      break;
+    end;
+  end;
+end;
+
+procedure CalcVirtualPos(x, y: integer);
+var
+  i: integer;
+  offsetx, offsety: integer;
+begin
+  offsetx := 2170;
+  offsety := 0;
+  for i := 0 to ScenceAmount - 1 do
+  begin
+    VirtualPosArray[i][0] := x + offsetx + RealPosArray[i][0];
+    VirtualPosArray[i][1] := y + offsety + RealPosArray[i][1];
+  end;
+end;
+
+function CalcScreenX(x, y: integer): integer;
+var
+  imageheight, imagewidth, tempres: double;
+begin
+  imagewidth := 4.5;
+  imageheight := 2.25;
+  tempres := x * (2 * imageheight) - y * (imagewidth);
+  Result := trunc(tempres);
+end;
+
+function CalcScreenY(x, y: integer): integer;
+var
+  imageheight, imagewidth, tempres: double;
+begin
+  imagewidth := 4.5;
+  imageheight := 2.25;
+  tempres := x * (imageheight) + y * (imageheight);
+  Result := trunc(tempres);
 end;
 
 //解毒的效果

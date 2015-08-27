@@ -513,12 +513,12 @@ begin
     //LoadIdxGrp('resource/hdgrp.idx', 'resource/hdgrp.grp', HIdx, HPic);
     CPicAmount := LoadIdxGrp('resource/cloud.idx', 'resource/cloud.grp', CIdx, CPic);
     HPicAmount := LoadIdxGrp('resource/hdgrp.idx', 'resource/hdgrp.grp', HIdx, HPic);
-    setlength(BRolePicCount, 110);
+    setLength(BRolePicCount, 110);
     setLength(WRoleIdx, 110);
     setLength(WRolePic, 110);
     for i := 0 to 109 do
     begin
-      filename := formatfloat('fight/fight000', i);
+      filename := formatfloat('fight/fight', i);
       BRolePicCount[i] := LoadIdxGrp(filename + '.idx', filename + '.grp', WRoleIdx[i], WRolePic[i]);
     end;
   end;
