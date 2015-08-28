@@ -518,7 +518,7 @@ begin
     setLength(WRolePic, 110);
     for i := 0 to 109 do
     begin
-      filename := formatfloat('fight/fight', i);
+      filename := formatfloat('fight/fight000', i);
       BRolePicCount[i] := LoadIdxGrp(filename + '.idx', filename + '.grp', WRoleIdx[i], WRolePic[i]);
     end;
   end;

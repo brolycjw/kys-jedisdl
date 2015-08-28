@@ -251,7 +251,19 @@ type
       Address: (Data: array[0..$5D] of smallint);
   end;
 
+  pPathNode = ^TPathNode;
+  TPathNode = record
+    Y, X: smallint;
+    Distance: integer;
+    PrevNode: pPathNode;
+    Visited: boolean;
+  end;
+
+
 var
+  MAXDISTANCE: integer = 2147483647;
+  PathNodeSet: array of array of TPathNode;
+  ShortestPathNodeArray: array of pPathNode;
 
   MODVersion: integer = 0;
   //0-原版,

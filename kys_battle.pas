@@ -92,6 +92,10 @@ procedure calcross(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; curX, curY, bnu
 procedure NearestMove(var Mx1, My1: integer; bnum: integer);
 procedure NearestMoveByPro(var Mx1, My1, Ax1, Ay1: integer; bnum, TeamMate, KeepDis, Prolist, MaxMinPro: integer;
   mode: integer);
+procedure FindShortestPath(var Mx1, My1: integer; bnum, destX, destY: integer);
+function GetShortestPathNode(curNode, destNode: pPathNode): pPathNode;
+function DistanceBetweenPoints(x1, y1, x2, y2: integer): integer;
+function CanMove(x, y: integer): boolean;
 
 var
   movetable: array of TPosition;
@@ -4236,48 +4240,10 @@ end;
 procedure NearestMove(var Mx1, My1: integer; bnum: integer);
 var
   temp1, temp2: integer;
+  i1, i2: integer;
+  pSourceNode: ^TPathNode;
 begin
   NearestMoveByPro(Mx1, My1, temp1, temp2, bnum, 0, 1, 0, 0, 0);
-
-  {myteam := brole[bnum].Team;
-  mindis := 9999;
-  step := brole[bnum].Step;
-
-  //CalCanSelect(bnum, 0, step);
-
-  Mx1 := Bx;
-  My1 := By;
-  //选择一个最近的敌人
-  for i := 0 to broleamount - 1 do
-  begin
-    if (myteam <> Brole[i].Team) and (Brole[i].Dead = 0) then
-    begin
-      tempdis := abs(Brole[i].X - Bx) + abs(Brole[i].Y - By);
-      if tempdis < mindis then
-      begin
-        mindis := tempdis;
-        aimX := Brole[i].X;
-        aimY := Brole[i].Y;
-      end;
-    end;
-  end;
-
-  for curX := 0 to 63 do
-    for curY := 0 to 63 do
-    begin
-      if Bfield[3, curX, curY] >= 0 then
-      begin
-        tempdis := abs(curX - aimX) + abs(curY - aimY);
-        if tempdis < mindis then
-        begin
-          mindis := tempdis;
-          Mx1 := curX;
-          My1 := curY;
-          //showmessage(inttostr(mindis));
-        end;
-      end;
-    end;}
-
 end;
 
 //TeamMate: 0-search enemy, 1-search teammate.
@@ -4367,7 +4333,7 @@ begin
     end;
   end;
 
-  KeepDis := min(KeepDis, abs(Bx - aimX) + abs(By - aimY) + step);
+  {KeepDis := min(KeepDis, abs(Bx - aimX) + abs(By - aimY) + step);
   mindis := 9999;
 
   if aimX > 0 then
@@ -4386,9 +4352,166 @@ begin
           end;
         end;
       end;
-  end;
+  end;}
+  FindShortestPath(Mx1, My1, bnum, aimX, aimY);
   Ax1 := aimX;
   Ay1 := aimY;
+end;
+
+// Djikstra's algorithm
+procedure FindShortestPath(var Mx1, My1: integer; bnum, destX, destY: integer);
+var
+  i, i1, i2: integer;
+  mindist, stepcount: integer;
+  sourceNode, curNode, destNode: pPathNode;
+begin
+  // Initialize node set
+  SetLength(PathNodeSet, 64, 64);
+  for i1 := 0 to 63 do
+    for i2 := 0 to 63 do
+      begin
+        PathNodeSet[i1][i2].Distance := MAXDISTANCE;
+        PathNodeSet[i1][i2].Visited := true;
+        PathNodeSet[i1][i2].PrevNode := nil;
+        PathNodeSet[i1][i2].X := i1;
+        PathNodeSet[i1][i2].Y := i2;
+        if (CanMove(i1, i2)) or ((i1 = destX) and (i2 = destY)) then
+        begin
+          PathNodeSet[i1][i2].Visited := false;
+        end;
+      end;
+  sourceNode := @PathNodeSet[Brole[bnum].X][Brole[bnum].Y];
+  WriteLn('SourceNode X: ', sourceNode^.X, ', Y: ', sourceNode^.Y);
+  sourceNode^.Distance := 0;
+  curNode := sourceNode;
+  destNode := @PathNodeSet[destX][destY];
+  WriteLn('DestNode X: ', destNode^.X, ', Y: ', destNode^.Y);
+  while curNode <> destNode do
+  begin
+    if curNode = nil then
+    begin
+      WriteLn('Finding next unvisited node with shortest distance');
+      mindist := MAXDISTANCE;
+      for i1 := 0 to 63 do
+        for i2 := 0 to 63 do
+        begin
+          if (not PathNodeSet[i1][i2].Visited) and (PathNodeSet[i1][i2].Distance <= mindist) then
+          begin
+            mindist := PathNodeSet[i1][i2].Distance;
+            curNode := @PathNodeSet[i1][i2];
+          end;
+        end;
+    end
+    else
+      curNode := GetShortestPathNode(curNode, destNode);
+    //WriteLn('ShortestPathCurNode X: ', curNode^.X, ', Y: ', curNode^.Y);
+  end;
+
+  SetLength(ShortestPathNodeArray, 999);
+  stepcount := 0;
+  while curNode.PrevNode <> nil do
+  begin
+    stepcount := stepcount + 1;
+    curNode := curNode.PrevNode;
+    ShortestPathNodeArray[stepcount] := curNode;
+    WriteLn('CurNode X: ', curNode^.X, ', Y: ', curNode^.Y);
+    if curNode.PrevNode <> nil then
+      WriteLn('PrevNode X: ', curNode^.PrevNode.X, ', Y: ', curNode^.PrevNode.Y);
+  end;
+  WriteLn('stepcount: ', stepcount);
+  for i := 0 to Brole[bnum].Step do
+  begin
+    Ax := ShortestPathNodeArray[stepcount - i].X;
+    Ay := ShortestPathNodeArray[stepcount - i].Y;
+  end;
+  WriteLn('Ax: ', Ax, ', Ay: ', Ay);
+end;
+
+function GetShortestPathNode(curNode, destNode: pPathNode): pPathNode;
+var
+  i, tempX, tempY, tempdist, mindist: integer;
+  Xinc, Yinc: array[1..4] of smallint;
+  nextNode: pPathNode;
+begin
+
+  // Set directions
+  Xinc[1] := 1;
+  Xinc[2] := -1;
+  Xinc[3] := 0;
+  Xinc[4] := 0;
+  Yinc[1] := 0;
+  Yinc[2] := 0;
+  Yinc[3] := 1;
+  Yinc[4] := -1;
+  while curNode <> destNode do
+  begin
+    mindist := MAXDISTANCE;
+    WriteLn('CurNode X: ', curNode^.X, ', Y: ', curNode^.Y);
+    nextNode := nil;
+    // Consider all unvisited neighbors
+    for i := 1 to 4 do
+    begin
+      tempdist := MAXDISTANCE;
+      tempX := curNode.X + Xinc[i];
+      tempY := curNode.Y + Yinc[i];
+      if (not PathNodeSet[tempX][tempY].Visited) then
+      begin
+        tempdist := curNode.Distance + DistanceBetweenPoints(tempX, tempY, destNode.X, destNode.Y);
+        if tempdist < PathNodeSet[tempX][tempY].Distance then
+        begin
+           PathNodeSet[tempX][tempY].Distance := tempdist;
+           PathNodeSet[tempX][tempY].PrevNode := curNode;
+        end;
+      end;
+      if tempdist < mindist then
+      begin
+        mindist := tempdist;
+        nextNode := @PathNodeSet[tempX][tempY];
+        WriteLn('NextNode X: ', nextNode^.X, ', Y: ', nextNode^.Y, ', Distance: ', mindist);
+      end;
+    end;
+    // If nextNode is nil i.e. no unvisited nodes are found
+    // then set curNode to nil and break
+    if nextNode <> nil then
+    begin
+      nextNode^.PrevNode := curNode;
+      curNode^.Visited := true;
+      curNode := nextNode;
+      WriteLn('NextNode X: ', nextNode^.X, ', Y: ', nextNode^.Y);
+    end
+    else
+    begin
+      curNode^.Visited := true;
+      curNode := nil;
+      WriteLn('No unvisited nodes found!');
+      break;
+    end;
+  end;
+  Result := curNode;
+  //WriteLn('Result CurNode X: ', curNode^.X, ', Y: ', curNode^.Y);
+end;
+
+function DistanceBetweenPoints(x1, y1, x2, y2: integer): integer;
+begin
+  Result := abs(y2 - y1) + abs(x2 - x1);
+end;
+
+function CanMove(x, y: integer): boolean;
+begin
+  if ((x < 0) or (x > 63) or (y < 0) or (y > 63)) or  // Check Out of Bounds
+     (Bfield[1, x, y] > 0) or // Check Building
+     ((Bfield[2, x, y] >= 0) and (Brole[Bfield[2, x, y]].Dead = 0)) or  // Check Role
+     (((Bfield[0, x, y] div 2 >= 179) and (Bfield[0, x, y] div 2 <= 190)) or // Check Water
+    (Bfield[0, x, y] div 2 = 261) or (Bfield[0, x, y] div 2 = 511) or
+    ((Bfield[0, x, y] div 2 >= 224) and (Bfield[0, x, y] div 2 <= 232)) or
+    ((Bfield[0, x, y] div 2 >= 662) and (Bfield[0, x, y] div 2 <= 674))) then
+  begin
+    Result := false;
+  end
+  else
+  begin
+    Result := true;
+  end;
 end;
 
 end.
