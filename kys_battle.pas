@@ -4333,27 +4333,32 @@ begin
     end;
   end;
 
-  {KeepDis := min(KeepDis, abs(Bx - aimX) + abs(By - aimY) + step);
-  mindis := 9999;
+  FindShortestPath(Mx1, My1, bnum, aimX, aimY);
 
-  if aimX > 0 then
+  if (Mx1 = Bx) and (My1 = By) then
   begin
-    for curX := 0 to 63 do
-      for curY := 0 to 63 do
-      begin
-        if Bfield[3, curX, curY] >= 0 then
+    KeepDis := min(KeepDis, abs(Bx - aimX) + abs(By - aimY) + step);
+    mindis := 9999;
+
+    if aimX > 0 then
+    begin
+      for curX := 0 to 63 do
+        for curY := 0 to 63 do
         begin
-          tempdis := abs(curX - aimX) + abs(curY - aimY);
-          if (tempdis < mindis) and (tempdis >= KeepDis) then
+          if Bfield[3, curX, curY] >= 0 then
           begin
-            mindis := tempdis;
-            Mx1 := curX;
-            My1 := curY;
+            tempdis := abs(curX - aimX) + abs(curY - aimY);
+            if (tempdis < mindis) and (tempdis >= KeepDis) then
+            begin
+              mindis := tempdis;
+              Mx1 := curX;
+              My1 := curY;
+            end;
           end;
         end;
-      end;
-  end;}
-  FindShortestPath(Mx1, My1, bnum, aimX, aimY);
+    end;
+  end;
+
   Ax1 := aimX;
   Ay1 := aimY;
 end;
@@ -4395,23 +4400,40 @@ begin
       for i1 := 0 to 63 do
         for i2 := 0 to 63 do
         begin
-          if (not PathNodeSet[i1][i2].Visited) and (PathNodeSet[i1][i2].Distance <= mindist) then
+          if (not PathNodeSet[i1][i2].Visited) and (PathNodeSet[i1][i2].Distance < mindist) then
           begin
             mindist := PathNodeSet[i1][i2].Distance;
             curNode := @PathNodeSet[i1][i2];
           end;
         end;
+      if curNode = nil then // Next shortest path node not found, algorithm failed to find a a path, move to nearest possible position instead
+      begin
+        curNode := sourceNode;
+        {mindist := MAXDISTANCE;
+        for i1 := 0 to 63 do
+          for i2 := 0 to 63 do
+          begin
+            if (curNode <> sourceNode) and (PathNodeSet[i1][i2].Distance < mindist) then
+            begin
+              mindist := PathNodeSet[i1][i2].Distance;
+              curNode := @PathNodeSet[i1][i2];
+              WriteLn('NearestNode X: ', curNode^.X, ', Y: ', curNode^.Y);
+              if curNode.PrevNode <> nil then
+                WriteLn('NearestNode PrevNode X: ', curNode^.PrevNode.X, ', Y: ', curNode^.PrevNode.Y);
+            end;
+          end;}
+        break;
+      end;
     end
     else
       curNode := GetShortestPathNode(curNode, destNode);
-    //WriteLn('ShortestPathCurNode X: ', curNode^.X, ', Y: ', curNode^.Y);
   end;
 
   SetLength(ShortestPathNodeArray, 999);
   stepcount := 0;
   while curNode.PrevNode <> nil do
   begin
-    stepcount := stepcount + 1;
+    Inc(stepcount);
     curNode := curNode.PrevNode;
     ShortestPathNodeArray[stepcount] := curNode;
     WriteLn('CurNode X: ', curNode^.X, ', Y: ', curNode^.Y);
@@ -4419,10 +4441,15 @@ begin
       WriteLn('PrevNode X: ', curNode^.PrevNode.X, ', Y: ', curNode^.PrevNode.Y);
   end;
   WriteLn('stepcount: ', stepcount);
-  for i := 0 to Brole[bnum].Step do
+
+  for i := 0 to stepcount do
   begin
-    Ax := ShortestPathNodeArray[stepcount - i].X;
-    Ay := ShortestPathNodeArray[stepcount - i].Y;
+    if i = Brole[bnum].Step then
+    begin
+      Mx1 := ShortestPathNodeArray[stepcount - i].X;
+      My1 := ShortestPathNodeArray[stepcount - i].Y;
+      break;
+    end;
   end;
   WriteLn('Ax: ', Ax, ', Ay: ', Ay);
 end;
@@ -4454,6 +4481,8 @@ begin
       tempdist := MAXDISTANCE;
       tempX := curNode.X + Xinc[i];
       tempY := curNode.Y + Yinc[i];
+      if (tempX < 0) or (tempX > 63) or (tempY < 0) or (tempY > 63) then
+        continue;
       if (not PathNodeSet[tempX][tempY].Visited) then
       begin
         tempdist := curNode.Distance + DistanceBetweenPoints(tempX, tempY, destNode.X, destNode.Y);
@@ -4461,7 +4490,9 @@ begin
         begin
            PathNodeSet[tempX][tempY].Distance := tempdist;
            PathNodeSet[tempX][tempY].PrevNode := curNode;
-        end;
+        end
+        else
+          tempdist := PathNodeSet[tempX][tempY].Distance;
       end;
       if tempdist < mindist then
       begin
@@ -4474,7 +4505,6 @@ begin
     // then set curNode to nil and break
     if nextNode <> nil then
     begin
-      nextNode^.PrevNode := curNode;
       curNode^.Visited := true;
       curNode := nextNode;
       WriteLn('NextNode X: ', nextNode^.X, ', Y: ', nextNode^.Y);
