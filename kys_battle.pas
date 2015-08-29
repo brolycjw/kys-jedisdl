@@ -97,6 +97,8 @@ function GetShortestPathNode(curNode, destNode: pPathNode): pPathNode;
 function DistanceBetweenPoints(x1, y1, x2, y2: integer): integer;
 function CanMove(x, y: integer): boolean;
 
+procedure CounterAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, stnum, level: integer);
+
 var
   movetable: array of TPosition;
   maxdelaypicnum: integer;
@@ -4542,6 +4544,96 @@ begin
   begin
     Result := true;
   end;
+end;
+
+procedure CounterAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, stnum, level: integer);
+var
+  curX, curY, curstep, nextX, nextY, dis, dis0, temphurt: integer;
+  i, i1, i2, eneamount, aim: integer;
+  step, distance, range, AttAreaType, myteam: integer;
+  aimHurt: array[0..63, 0..63] of integer;
+begin
+  step := Brole[bnum].Step;
+  Mx1 := -1;
+  My1 := -1;
+  Ax1 := -1;
+  Ay1 := -1;
+  tempmaxhurt := -1;
+  FillChar(aimHurt[0, 0], sizeof(aimHurt), -1);
+  AttAreaType := RStyles[stnum].AttAreaType;
+  distance := RStyles[stnum].MoveDistance[level - 1];
+  range := RStyles[stnum].AttDistance[level - 1];
+  AttAreaType := RStyles[stnum].AttAreaType;
+  myteam := Brole[bnum].Team;
+
+  for curX := 0 to 63 do
+    for curY := 0 to 63 do
+    begin
+      if (Bfield[3, curX, curY] >= 0) and (Bfield[3, curX, curY] <= step) then
+      begin
+        case AttAreaType of
+          0:
+            dis := distance; //calpoint(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+          1:
+            dis := 1; //calline(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+          2:
+            dis := 0; //calcross(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+          3:
+            dis := distance; //calarea(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+          {4:
+            caldirdiamond(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+          5:
+            caldirangle(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+          6:
+            calfar(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);}
+        end;
+
+        for i1 := max(curX - dis, 0) to min(curX + dis, 63) do
+        begin
+          dis0 := abs(i1 - curX);
+          for i2 := max(curY - dis + dis0, 0) to min(curY + dis - dis0, 63) do
+          begin
+            if AttAreaType <> 3 then
+              SetAminationPosition(curX, curY, i1, i2, AttAreaType, distance, range);
+
+            temphurt := 0;
+            if ((AttAreaType = 0) or (AttAreaType = 3)) and (aimHurt[i1, i2] >= 0) then
+            begin
+              if aimHurt[i1, i2] > 0 then
+                temphurt := aimHurt[i1, i2] + random(5) - random(5); //点面类攻击已经计算过的点简单处理
+            end
+            else
+            begin
+              for i := 0 to BRoleAmount - 1 do
+              begin
+                //特别处理面攻击, 因为当面积较大时设置动画位置比较慢
+                if (Brole[i].Team <> myteam) and (Brole[i].Dead = 0) and
+                  (((AttAreaType <> 3) and (Bfield[4, Brole[i].X, Brole[i].Y] > 0)) or
+                  ((AttAreaType = 3) and (abs(i1 - Brole[i].X) <= range) and (abs(i2 - Brole[i].Y) <= range))) then
+                begin
+                  temphurt := temphurt + CalHurtValue2(bnum, i, stnum, level);
+                end;
+              end;
+              aimHurt[i1, i2] := temphurt;
+            end;
+            if temphurt > tempmaxhurt then
+            begin
+              tempmaxhurt := temphurt;
+              Mx1 := curX;
+              My1 := curY;
+              Ax1 := i1;
+              Ay1 := i2;
+            end;
+          end;
+        end;
+      end;
+    end;
+
+  //Bx := tempBx;
+  //By := tempBy;
+  //Ax := tempAx;
+  //Ay := tempAy;
+
 end;
 
 end.

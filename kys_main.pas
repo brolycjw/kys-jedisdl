@@ -2955,8 +2955,11 @@ end;
 procedure MenuEsc;
 var
   word: array[0..6] of WideString;
-  i: integer;
+  i, menumax: integer;
 begin
+  menumax := 5;
+  if where = 0 then
+    menumax := 6;
   NeedRefreshScence := 0;
   word[0] := ('醫療');
   word[1] := ('解毒');
@@ -2969,7 +2972,7 @@ begin
   i := 0;
   while i >= 0 do
   begin
-    i := CommonMenu(27, 30, 46, 6, i, word);
+    i := CommonMenu(27, 30, 46, menumax, i, word);
     case i of
       0: MenuMedcine;
       1: MenuMedPoison;
@@ -5913,8 +5916,8 @@ begin
   curselect := -1;
   startdrag := false;
 
-  startx := -2170;
-  starty := -1088;
+  startx := CENTER_X - 2170;
+  starty := CENTER_Y - 1088;
 
   // initialize RealPosArray
   for i := 0 to ScenceAmount - 1 do
@@ -5924,6 +5927,8 @@ begin
     RealPosArray[i][1] := CalcScreenY(RScence[i].MainEntranceY1, RScence[i].MainEntranceX1);
     WriteLn(i, 'After: ', RealPosArray[i][0], ', ', RealPosArray[i][1]);
   end;
+  startx := CENTER_X - 2170 - CalcScreenX(My, Mx);
+  starty := CENTER_Y - CalcScreenY(My, Mx);
   CalcVirtualPos(startx, starty);
 
   ShowTravelMap(startx, starty);
@@ -6017,13 +6022,27 @@ begin
   //清空键盘键和鼠标键值, 避免影响其余部分
   event.key.keysym.sym := 0;
   event.button.button := 0;
-
+  Redraw;
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
 end;
 
 procedure ShowTravelMap(x, y: integer);
+var
+  offsetx, offsety, currentX, currentY: integer;
+  str: WideString;
 begin
+  offsetx := 2170;
+  offsety := 0;
   SDL_FillRect(screen, nil, 0);
   display_img(pchar(AppPath + 'resource/map.png'), x, y);
+
+  // 繪製當前位置
+  currentX := x + offsetx + CalcScreenX(My, Mx);
+  currentY := y + offsety + CalcScreenY(My, Mx);
+  DrawRectangle(screen, currentX, currentY, 10, 10, ColColor($64), ColColor($66), 100);
+  str := ('當前位置');
+  DrawShadowText(@str[1], currentX, currentY + 5, ColColor($64), ColColor($66));
+
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
 end;
 
@@ -6059,7 +6078,7 @@ begin
   Result := -1;
   for i := 0 to ScenceAmount - 1 do
   begin
-    if (abs(abs(VirtualPosArray[i][0]) - abs(x)) < 10) and (abs(abs(VirtualPosArray[i][1]) - abs(y)) < 10) then
+    if (abs(VirtualPosArray[i][0] - x) < 10) and (abs(VirtualPosArray[i][1] - y) < 10) then
     begin
       Result := i;
       break;
