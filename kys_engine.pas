@@ -2276,10 +2276,20 @@ end;
 procedure GetMousePosition(var x, y: integer; x0, y0: integer; yp: integer = 0);
 var
   x1, y1: integer;
+  screenx, screeny, imagewidth, imageheight: double;
 begin
   SDL_GetMouseState2(x1, y1);
-  x := (-x1 + CENTER_X + 2 * (y1 + yp) - 2 * CENTER_Y + 18) div 36 + x0;
-  y := (x1 - CENTER_X + 2 * (y1 + yp) - 2 * CENTER_Y + 18) div 36 + y0;
+  imagewidth := 18;
+  imageheight := 9;
+  screenx := -(x1 - CENTER_X);
+  screeny := y1 - CENTER_Y + 9;
+  x := trunc((screenx/imagewidth + screeny/imageheight) / 2);
+  y := trunc((screeny/imageheight - screenx/imagewidth) / 2);
+  x := x + x0;
+  y := y + y0;
+  //36x := (-x1 + CENTER_X) + 2 * (y1 - CENTER_Y) + 9
+  //x := (-x1 + CENTER_X + 2 * (y1 + yp) - 2 * CENTER_Y + 18) div 36 + x0;
+  //y := (x1 - CENTER_X + 2 * (y1 + yp) - 2 * CENTER_Y + 18) div 36 + y0;
 end;
 
 //判断鼠标是否在区域内, 以画布的坐标为准

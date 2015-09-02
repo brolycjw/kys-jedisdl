@@ -1421,8 +1421,8 @@ begin
   bnum := floor(lua_tonumber(L, -3));
   mtype := floor(lua_tonumber(L, -2));
   enum := floor(lua_tonumber(L, -1));
-  PlayActionAmination(bnum, mtype);
-  PlayMagicAmination(bnum, mtype);
+  PlayActionAnimation(bnum, mtype);
+  PlayMagicAnimation(bnum, mtype);
   Result := 0;
 
 end;
@@ -1786,11 +1786,28 @@ end;
 // 獲取武功
 function AcquireMagic(L: Plua_state): integer; cdecl;
 var
-  magicnum, level: integer;
+  magicnum, level, magictype: integer;
+  word: WideString;
 begin
   magicnum := floor(lua_tonumber(L, -2));
   level := floor(lua_tonumber(L, -1));
   RMagic[magicnum].CanLearn := level;
+  DrawRectangle(screen, CENTER_X - 75, 122, 145, 50, 0, ColColor(255), 50);
+  magictype := RMagic[magicnum].MagicType;
+  if magictype = 1 then
+    word := ('新增拳掌武功')
+  else if magictype = 2 then
+    word := ('新增劍系武功')
+  else if magictype = 3 then
+    word := ('新增刀系武功')
+  else if magictype = 4 then
+    word := ('新增特殊武功');
+  DrawShadowText(screen, @word[1], CENTER_X - 70, 125, ColColor($5), ColColor($7));
+  //DrawBig5ShadowText(screen, @Rrole[rnum].Name, CENTER_X - 70, 100, ColColor($21), ColColor($23));
+  DrawBig5ShadowText(screen, @RMagic[magicnum].Name, CENTER_X - 70, 150, ColColor($64), ColColor($66));
+  SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
+  WaitAnyKey;
+  Redraw;
 end;
 
 end.

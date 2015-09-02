@@ -949,8 +949,7 @@ begin
   begin
     if (Rrole[rnum].Magic[i] <= 0) or (Rrole[rnum].Magic[i] = magicnum) then
     begin
-      if Rrole[rnum].Magic[i] > 0 then
-        Rrole[rnum].Maglevel[i] := Rrole[rnum].Maglevel[i] + 1;
+      Rrole[rnum].Maglevel[i] := Rrole[rnum].Maglevel[i] + 1;
       Rrole[rnum].Magic[i] := magicnum;
       if Rrole[rnum].MagLevel[i] > 10 then
         Rrole[rnum].Maglevel[i] := 10;
@@ -2243,8 +2242,8 @@ begin
       e2 := e_GetValue(0, e1, e2);
       e3 := e_GetValue(1, e1, e3);
       e4 := e_GetValue(2, e1, e4);
-      PlayActionAmination(e2, e3);
-      PlayMagicAmination(e2, e4);
+      PlayActionAnimation(e2, e3);
+      PlayMagicAnimation(e2, e4);
     end;
     45: //Show values.
     begin
@@ -3000,8 +2999,7 @@ begin
   begin
     if (Rrole[rnum].Neigong[i] <= 0) or (Rrole[rnum].Neigong[i] = ngnum) then
     begin
-      if Rrole[rnum].Neigong[i] > 0 then
-        Rrole[rnum].NeigongLevel[i] := Rrole[rnum].NeigongLevel[i] + 1;
+      Rrole[rnum].NeigongLevel[i] := Rrole[rnum].NeigongLevel[i] + 1;
       Rrole[rnum].Neigong[i] := ngnum;
       if Rrole[rnum].NeigongLevel[i] > 10 then
         Rrole[rnum].NeigongLevel[i] := 10;

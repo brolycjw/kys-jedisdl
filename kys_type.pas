@@ -137,18 +137,22 @@ type
       Element: (ListNum: smallint;
         Name: array[0..19] of char;
         Introduction: array[0..29] of char;
-        AttackName, DefenceName: array[0..19] of char;
         CanLearn: smallint;
-        UnKnow: array[0..3] of smallint;
         SoundNum, AmiNum: smallint;
-        AddCurrentHP, AddMaxHP, AddPoi, AddPhyPower, ChangeMPType, AddCurrentMP, AddMaxMP: smallint;
-        AddAttack, AddSpeed, AddDefence, AddMedcine, AddUsePoi, AddMedPoi, AddDefPoi: smallint;
-        AddFist, AddSword, AddKnife, AddUnusual, AddHidWeapon, AddKnowledge, AddEthics,
-        AddAttTwice, AddAttPoi: smallint;
-        OnlyPracRole, NeedMPType, NeedMP, NeedAttack, NeedSpeed, NeedDefence, NeedUsePoi, NeedAptitude: smallint;
-        RestoreHP, CurePoison, AttackPower, DefencePower, Activation, Special: smallint;
-        NeedExp: smallint);
-      Address: (Data: array[0..89] of smallint);
+        ChangeMPType: smallint;
+        AddMaxHP, AddMaxMP, AddAttack, AddSpeed, AddDefence,
+        AddMedcine, AddUsePoi, AddMedPoi, AddDefPoi,
+        AddFist, AddSword, AddKnife, AddUnusual, AddHidWeapon,
+        AddKnowledge, AddEthics, AddAttTwice, AddAttPoi: smallint;
+        OnlyPracRole, NeedMPType, NeedMaxMP, NeedAttack, NeedSpeed, NeedDefence,
+        NeedUsePoi, NeedMedcine, NeedMedPoi,
+        NeedFist, NeedSword, NeedKnife, NeedUnusual, NeedHidWeapon, NeedAptitude: smallint;
+        NeedExp: smallint;
+        HurtType, AttAreaType, NeedMP, Poison: smallint;
+        Attack, Defence, MoveDistance, AttDistance, HurtMP: array[0..9] of smallint;
+        RestoreHP, CurePoison: smallint;
+        Reserved: array[0..7] of smallint);
+      Address: (Data: array[0..127] of smallint);
   end;
 
   TShop = record
@@ -502,9 +506,7 @@ var
   //当前人物坐标, 选择目标的坐标
   Bstatus: integer;
   //战斗状态, 0-继续, 1-胜利, 2-失败
-  AnimationMode: integer = 0;
-  //動畫状态, 0-無, 1-招式, 2-内功
-  StyleString, NeigongString: WideString;
+  AttackPrefix, AttackString, NeigongString, NeigongPostfix: WideString;
   ScenceAmount, MagicAmount, StylesAmount, NeigongAmount: integer;
   // 武功總數，招式總數，内功總數
 

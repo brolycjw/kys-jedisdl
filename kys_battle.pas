@@ -47,14 +47,16 @@ procedure CalCanSelect(bnum, mode, step: integer);
 procedure Attack(bnum: integer);
 procedure AttackAction(bnum, i, stnum, level: integer); overload;
 procedure AttackAction(bnum, stnum, level: integer); overload;
-procedure ShowMagicName;
+procedure CheckCounter(bnum: integer);
+procedure CheckChain(bnum, stnum, level: integer; ChainRound: integer = 0);
+procedure ShowMagicName(mode: integer = 0; refresh: integer = 0);
 procedure ShowItemName(inum: integer);
 function SelectMagic(rnum: integer): integer;
 function SelectStyle(rnum, mpos: integer): integer;
 procedure ShowMagicMenu(MenuStatus, menu, max: integer; menuString, menuEngString: array of WideString);
-procedure SetAminationPosition(mode, step: integer; range: integer = 0); overload;
+procedure SetAnimationPosition(mode, step: integer; range: integer = 0); overload;
 procedure SetAminationPosition(Bx, By, Ax, Ay, mode, step: integer; range: integer = 0); overload;
-procedure PlayMagicAmination(bnum, enum: integer; ForTeam: integer = 0; mode: integer = 0);
+procedure PlayMagicAnimation(bnum, enum: integer; ForTeam: integer = 0; mode: integer = 0; AnimationMode: integer = 0);
 procedure CalHurtRole(bnum, stnum, level: integer);
 function CalHurtValue(bnum1, bnum2, stnum, level: integer): integer;
 function CalHurtValue2(bnum1, bnum2, stnum, level: integer): integer;
@@ -74,7 +76,7 @@ function CalRNum(team: integer): integer;
 procedure BattleMenuItem(bnum: integer);
 procedure UsePoison(bnum: integer);
 procedure UseNeigong(bnum, mode: integer);
-procedure PlayActionAmination(bnum, mode: integer; stnum: integer = -1);
+procedure PlayActionAnimation(bnum, mode: integer; stnum: integer = -1);
 procedure Medcine(bnum: integer);
 procedure MedPoison(bnum: integer);
 procedure UseHiddenWeapon(bnum, inum: integer);
@@ -97,7 +99,8 @@ function GetShortestPathNode(curNode, destNode: pPathNode): pPathNode;
 function DistanceBetweenPoints(x1, y1, x2, y2: integer): integer;
 function CanMove(x, y: integer): boolean;
 
-procedure CounterAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, stnum, level: integer);
+procedure CounterAttack(bnum, targetnum: integer);
+procedure TryCounterAttack(var Ax1, Ay1, tempmaxhurt: integer; bnum, stnum, level: integer);
 
 var
   movetable: array of TPosition;
@@ -554,9 +557,8 @@ begin
             end;
             7:
             begin
-              //ShowStatus(Brole[i].rnum);
-              //waitanykey;
               ShowStatus(Brole[i].rnum, CENTER_X - 263, CENTER_Y - 192, -1, false, 1);
+              WaitAnyKey;
             end;
             8: Rest(i);
             9:
@@ -1079,7 +1081,7 @@ begin
   Ay := By;
   BattleSelecting := True;
   Redraw;
-  SetAminationPosition(AreaType, step, AreaRange);
+  SetAnimationPosition(AreaType, step, AreaRange);
   DrawBFieldWithCursor(step);
   SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
   while (SDL_WaitEvent(@event) >= 0) do
@@ -1149,7 +1151,7 @@ begin
         end;
       end;
     end;
-    SetAminationPosition(AreaType, step, AreaRange);
+    SetAnimationPosition(AreaType, step, AreaRange);
     DrawBFieldWithCursor(step);
     if Bfield[2, Ax, Ay] >= 0 then
       ShowSimpleStatus(Brole[Bfield[2, Ax, Ay]].rnum, screen.w - 155, screen.h - 183);
@@ -1175,7 +1177,7 @@ begin
     3: Ax := Ax + 1;
   end;
 
-  SetAminationPosition(1, step);
+  SetAnimationPosition(1, step);
   DrawBFieldWithCursor(-1);
 
   str := ('選擇攻擊方向');
@@ -1257,7 +1259,7 @@ begin
           Ay := By + 1;
       end;
     end;
-    SetAminationPosition(1, step);
+    SetAnimationPosition(1, step);
     DrawBFieldWithCursor(-1);
     SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
   end;
@@ -1608,7 +1610,7 @@ end;
 
 procedure Attack(bnum: integer);
 var
-  rnum, i, mnum, smenu, stnum, level, step, i1: integer;
+  rnum, i, mnum, smenu, stnum, level, step, i1, stylecount: integer;
 begin
   rnum := Brole[bnum].rnum;
   RecordFreshScreen(0, 0, screen.w, screen.h);
@@ -1619,7 +1621,13 @@ begin
       break;
     mnum := Rrole[rnum].Magic[i];
     level := Rrole[rnum].MagLevel[i];
-    smenu := SelectStyle(rnum, i);
+    stylecount := 0;
+    smenu := 0;
+    for i := 0 to 4 do
+      if RMagic[mnum].Styles[i] > 0 then
+        inc(stylecount);
+    if stylecount > 1 then
+      smenu := SelectStyle(rnum, i);
     if smenu < 0 then
       break;
     stnum := RMagic[mnum].Styles[smenu];
@@ -1644,7 +1652,7 @@ begin
         end;
         2:
         begin
-          SetAminationPosition(RStyles[stnum].AttAreaType, RStyles[stnum].MoveDistance[level - 1],
+          SetAnimationPosition(RStyles[stnum].AttAreaType, RStyles[stnum].MoveDistance[level - 1],
             RStyles[stnum].AttDistance[level - 1]);
           DrawBFieldWithCursor(-1);
           SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
@@ -1664,7 +1672,6 @@ begin
   end;
   //如果行动成功, 武功等级增加, 播放效果
   AttackAction(bnum, i, stnum, level);
-
 end;
 
 procedure AttackAction(bnum, i, stnum, level: integer); overload;
@@ -1672,10 +1679,13 @@ var
   rnum, i1: integer;
 begin
   rnum := Brole[bnum].rnum;
+  // 已行動而且非反擊
   if Brole[bnum].Acted = 1 then
   begin
     AttackAction(bnum, stnum, level);
-  end;
+    CheckChain(bnum, stnum, level);
+    CheckCounter(bnum);
+  end
 end;
 
 //攻击效果, 保持与之前的兼容不修改名字
@@ -1683,41 +1693,74 @@ end;
 procedure AttackAction(bnum, stnum, level: integer); overload;
 begin
   UseNeigong(bnum, 1);
-  AnimationMode := 1;
-  StyleString := Big5ToUnicode(RStyles[stnum].Name);
-  PlayActionAmination(bnum, RStyles[stnum].MagicType, stnum);
-  PlayMagicAmination(bnum, RStyles[stnum].AmiNum); //武功效果
-  StyleString := '';
-  AnimationMode := 0;
+  AttackString := Big5ToUnicode(RStyles[stnum].Name);
+  PlayActionAnimation(bnum, RStyles[stnum].MagicType, stnum);
+  PlayMagicAnimation(bnum, RStyles[stnum].AmiNum); //武功效果
   CalHurtRole(bnum, stnum, level); //计算被打到的人物
   ShowHurtValue(RStyles[stnum].HurtType); //显示数字
+end;
 
+procedure CheckCounter(bnum: integer);
+var
+  i: integer;
+begin
+  for i := 0 to BRoleAmount - 1 do
+  begin
+    if (Bfield[4, Brole[i].X, Brole[i].Y] <> 0) and (Brole[bnum].Team <> Brole[i].Team) and (Brole[i].Dead = 0) then
+    begin
+      if random(100) < 50 then
+      begin
+        AttackPrefix := UTF8Decode('反擊·') + AttackPrefix;
+        CounterAttack(i, bnum);
+      end;
+    end;
+  end;
+end;
+
+procedure CheckChain(bnum, stnum, level: integer; ChainRound: integer = 0);
+begin
+  if random(100) < (40 - ChainRound * 20) then
+  begin
+    ChainRound := ChainRound + 1;
+    AttackPrefix := UTF8Decode('連擊·') + AttackPrefix;
+    AttackAction(bnum, stnum, level);
+    CheckChain(bnum, stnum, level, ChainRound);
+  end;
 end;
 
 //mode = 1 means the hidden weapon.
 
-procedure ShowMagicName;
+procedure ShowMagicName(mode: integer = 0; refresh: integer = 0);
 var
   l, color1, color2: integer;
   str: WideString;
 begin
-  case AnimationMode of
-    1:
+  color1 := ColColor($64);
+  color2 := ColColor($66);
+  if mode = 0 then
+  begin
+    str := AttackString;
+    if Length(AttackPrefix) > 0 then
+      str := AttackPrefix + str;
+    if refresh <> 0 then
     begin
-      color1 := ColColor($64);
-      color2 := ColColor($66);
-      str := StyleString;
+      AttackPrefix := '';
+      AttackString := '';
     end;
-    2:
+  end
+  else
+  begin
+    str := NeigongString;
+    if Length(NeigongPostfix) > 0 then
+      str := str + NeigongPostfix;
+    if refresh <> 0 then
     begin
-      color1 := ColColor($64);
-      color2 := ColColor($66);
-      str := NeigongString;
+      NeigongPostfix := '';
+      NeigongString := '';
     end;
   end;
   l := length(str);
-  if AnimationMode > 0 then
-    DrawShadowText(@str[1], CENTER_X - l * 10, CENTER_Y - 80, color1, color2);
+  DrawShadowText(@str[1], CENTER_X - l * 10, CENTER_Y - 80, color1, color2);
 end;
 
 procedure ShowItemName(inum: integer);
@@ -1743,7 +1786,7 @@ var
   menuString, menuEngString: array[0..9] of WideString;
 begin
   x := 19 + FONT_WIDTH * 2;
-  y := 10 + FONT_HEIGHT;
+  y := 10;
   MenuStatus := 0;
   max := 0;
   //setlength(menustring, 10);
@@ -1881,7 +1924,7 @@ var
   x, y, i, p: integer;
 begin
   x := 19 + FONT_WIDTH * 2;
-  y := 10 + FONT_HEIGHT;
+  y := 10;
   Redraw;
   LoadFreshScreen(0, 0, screen.w, screen.h);
   DrawRectangle(screen, x, y, 160, max * FONT_HEIGHT + 28, 0, ColColor(255), 30);
@@ -1907,7 +1950,7 @@ end;
 
 //设定攻击范围
 
-procedure SetAminationPosition(mode, step: integer; range: integer = 0); overload;
+procedure SetAnimationPosition(mode, step: integer; range: integer = 0); overload;
 begin
   SetAminationPosition(Bx, By, Ax, Ay, mode, step, range);
 end;
@@ -1970,7 +2013,7 @@ end;
 //显示武功效果, forTeam: 行动目标为队友
 //mode: 决定闪烁颜色, 与showhurtvalue相同
 
-procedure PlayMagicAmination(bnum, enum: integer; ForTeam: integer = 0; mode: integer = 0);
+procedure PlayMagicAnimation(bnum, enum: integer; ForTeam: integer = 0; mode: integer = 0; AnimationMode: integer = 0);
 var
   beginpic, i, endpic, x, y, z, min, max, i1, i2: integer;
   posA, posB: TPosition;
@@ -2005,18 +2048,12 @@ begin
     beginpic := beginpic + effectlist[i];
   endpic := beginpic + effectlist[enum] - 1;
 
-  {for i := beginpic to endpic do
-  begin
-    DrawBFieldWithEft(i);
-    SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
-    sdl_delay(20);
-  end;}
   i := beginpic;
   while (SDL_PollEvent(@event) >= 0) do
   begin
     CheckBasicEvent;
     DrawBFieldWithEft(i, beginpic, endpic, min, bnum, forteam, 1, $FFFFFFFF);
-    ShowMagicName;
+    ShowMagicName(AnimationMode, 1);
     SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
     SDL_Delay(BATTLE_SPEED);
     i := i + 1;
@@ -2169,7 +2206,7 @@ begin
     for i := 0 to 4 do
       if Rrole[rnum1].Neigong[i] = Rrole[rnum1].ChanneledNeigong then
       begin
-        att := att + RNeigong[Rrole[rnum1].ChanneledNeigong].AttackPower * Rrole[rnum1].NeigongLevel[i];
+        att := att + RNeigong[Rrole[rnum1].ChanneledNeigong].Attack[Rrole[rnum1].NeigongLevel[i]];
         break;
       end;
   end;
@@ -2185,7 +2222,7 @@ begin
     for i := 0 to 4 do
       if Rrole[rnum2].Neigong[i] = Rrole[rnum2].ChanneledNeigong then
       begin
-        att := att + RNeigong[Rrole[rnum2].ChanneledNeigong].DefencePower * Rrole[rnum2].NeigongLevel[i];
+        att := att + RNeigong[Rrole[rnum2].ChanneledNeigong].Defence[Rrole[rnum2].NeigongLevel[i]];
         break;
       end;
   end;
@@ -2867,7 +2904,7 @@ end;
 
 //动作动画
 
-procedure PlayActionAmination(bnum, mode: integer; stnum: integer = -1);
+procedure PlayActionAnimation(bnum, mode: integer; stnum: integer = -1);
 var
   d1, d2, dm, rnum, i, beginpic, endpic, idx, grp, tnum, len, spic, Ax1, Ay1: integer;
   filename: string;
@@ -2932,7 +2969,7 @@ begin
         PlaySoundA(RStyles[stnum].SoundNum, 0);
       ShowMagicName;
       SDL_UpdateRect2(screen, 0, 0, screen.w, screen.h);
-      SDL_Delay(BATTLE_SPEED);
+      SDL_Delay(BATTLE_SPEED + 20);
       i := i + 1;
       if i > endpic then
       begin
@@ -3000,9 +3037,9 @@ begin
       Rrole[rnum1].Poison := Rrole[rnum1].Poison + addpoi;
       Brole[bnum1].ShowNumber := addpoi;
       Brole[bnum1].ExpGot := Brole[bnum1].ExpGot + addpoi;
-      SetAminationPosition(0, 0);
-      PlayActionAmination(bnum, 0);
-      PlayMagicAmination(bnum, 30, 0, 2);
+      SetAnimationPosition(0, 0);
+      PlayActionAnimation(bnum, 0);
+      PlayMagicAnimation(bnum, 30, 0, 2);
       ShowHurtValue(2);
     end;
   end;
@@ -3016,6 +3053,7 @@ var
 begin
   rnum := Brole[bnum].rnum;
   ngnum := Rrole[rnum].Neigong[Rrole[rnum].ChanneledNeigong];
+  NeigongString := Big5ToUnicode(@RNeigong[ngnum].Name);
   for i := 0 to 4 do
   begin
     if RRole[rnum].Neigong[i] = ngnum then
@@ -3034,13 +3072,14 @@ begin
           Ax := Bx;
           Ay := By;
 
-          SetAminationPosition(0, 0);
+          SetAnimationPosition(0, 0);
           if (RNeigong[ngnum].RestoreHP > 0) and (RRole[rnum].CurrentHP < RRole[rnum].MaxHP) then
           begin
             restorehp := RRole[rnum].CurrentHP + RNeigong[ngnum].RestoreHP * nglevel;
             Brole[bnum].ShowNumber := restorehp;
             RRole[rnum].CurrentHP := min(restorehp, RRole[rnum].MaxHP);
-            PlayMagicAmination(bnum, 0, 1, 3);
+            NeigongPostfix := UTF8Decode('運功療傷');
+            PlayMagicAnimation(bnum, 0, 1, 3);
             ShowHurtValue(3);
           end;
           if (RNeigong[ngnum].CurePoison > 0) and (RRole[rnum].Poison > 0) then
@@ -3048,7 +3087,8 @@ begin
             curepoison := RNeigong[ngnum].CurePoison * nglevel;
             Brole[bnum].ShowNumber := curepoison;
             RRole[rnum].Poison := min(RRole[rnum].Poison - curepoison, 0);
-            PlayMagicAmination(bnum, 36, 1, 4);
+            NeigongPostfix := UTF8Decode('運功解毒');
+            PlayMagicAnimation(bnum, 36, 1, 4);
             ShowHurtValue(4);
           end;
           Brole[bnum].NeigongCheck := 1;
@@ -3068,8 +3108,10 @@ begin
         oldAy := Ay;
         Ax := Bx;
         Ay := By;
-        SetAminationPosition(0, 0);
-        PlayMagicAmination(bnum, RNeigong[ngnum].AmiNum, 1);
+        SetAnimationPosition(0, 0);
+        NeigongPostfix := UTF8Decode('·加力');
+        PlayMagicAnimation(bnum, RNeigong[ngnum].AmiNum, 1, 0, 1);
+        NeigongPostfix := '';
         Ax := oldAx;
         Ay := oldAy;
         // restore bfield animations from temp array
@@ -3083,6 +3125,7 @@ begin
       end;
     end;
   end;
+  NeigongString := '';
 end;
 
 //医疗
@@ -3137,9 +3180,9 @@ begin
 
       Brole[bnum1].ShowNumber := addlife;
       Brole[bnum1].ExpGot := Brole[bnum1].ExpGot + addlife;
-      SetAminationPosition(0, 0);
-      PlayActionAmination(bnum, 0);
-      PlayMagicAmination(bnum, 0, 1, 3);
+      SetAnimationPosition(0, 0);
+      PlayActionAnimation(bnum, 0);
+      PlayMagicAnimation(bnum, 0, 1, 3);
       ShowHurtValue(3);
     end;
   end;
@@ -3179,9 +3222,9 @@ begin
 
       Brole[bnum1].ShowNumber := minuspoi;
       Brole[bnum1].ExpGot := Brole[bnum1].ExpGot + minuspoi;
-      SetAminationPosition(0, 0);
-      PlayActionAmination(bnum, 0);
-      PlayMagicAmination(bnum, 36, 1, 4);
+      SetAnimationPosition(0, 0);
+      PlayActionAnimation(bnum, 0);
+      PlayMagicAnimation(bnum, 36, 1, 4);
       ShowHurtValue(4);
     end;
   end;
@@ -3273,10 +3316,10 @@ begin
           Rrole[rnum1].Hurt := min(Rrole[rnum1].Hurt + hurt div LIFE_HURT, 99);
           Rrole[rnum1].Poison := min(Rrole[rnum1].Poison + Ritem[inum].AddPoi *
             (100 - Rrole[rnum1].DefPoi) div 100, 99);
-          SetAminationPosition(0, 0);
+          SetAnimationPosition(0, 0);
           ShowItemName(inum);
-          PlayActionAmination(bnum, 0);
-          PlayMagicAmination(bnum, Ritem[inum].AmiNum);
+          PlayActionAnimation(bnum, 0);
+          PlayMagicAnimation(bnum, Ritem[inum].AmiNum);
           ShowHurtValue(0);
         end;
       end;
@@ -3339,8 +3382,8 @@ var
   end;
 
 begin
-  x := 160;
-  y := 82;
+  x := 19 + FONT_WIDTH * 2;
+  y := 10;
   w := 160;
   //SDL_EnableKeyRepeat(20, 100);
   Result := True;
@@ -3489,7 +3532,7 @@ begin
     ShowSimpleStatus(rnum, screen.w - 155, screen.h - 183);
   end
   else
-    ShowSimpleStatus(rnum, 10, 10);
+    ShowSimpleStatus(rnum, screen.w - 155, 10);
 
   SDL_Delay(450);
 
@@ -3637,7 +3680,7 @@ begin
           for j1 := 0 to 4 do
           begin
             stnum := RMagic[mnum].Styles[j1];
-            if (stnum > 0) and (level > RStyles[stnum].ReqLevel) then
+            if (stnum > 0) and (level >= RStyles[stnum].ReqLevel) then
             begin
               if Rrole[rnum].CurrentMP < RStyles[stnum].NeedMP * ((level + 1) div 2) then
                 level := Rrole[rnum].CurrentMP div RStyles[stnum].NeedMP * 2;
@@ -3673,7 +3716,7 @@ begin
         Ay := curAy1;
         stnum := curStnum;
         level := curlevel;
-        SetAminationPosition(RStyles[stnum].AttAreaType, RStyles[stnum].MoveDistance[level - 1],
+        SetAnimationPosition(RStyles[stnum].AttAreaType, RStyles[stnum].MoveDistance[level - 1],
           RStyles[stnum].AttDistance[level - 1]);
         Brole[bnum].Acted := 1;
         AttackAction(bnum, p, stnum, level);
@@ -4546,18 +4589,94 @@ begin
   end;
 end;
 
-procedure CounterAttack(var Mx1, My1, Ax1, Ay1, tempmaxhurt: integer; bnum, stnum, level: integer);
+procedure CounterAttack(bnum, targetnum: integer);
 var
-  curX, curY, curstep, nextX, nextY, dis, dis0, temphurt: integer;
-  i, i1, i2, eneamount, aim: integer;
-  step, distance, range, AttAreaType, myteam: integer;
+  i, p, temp, rnum, inum, aim, mnum, stnum, level: integer;
+  i1, j1, i2: integer;
+  Bx1, By1, Ax1, Ay1, curBx1, curBy1, curAx1, curAy1, curStnum, curMaxHurt, curlevel, tempmaxhurt: integer;
+  str: WideString;
+begin
+  WriteLn('bnum: ', bnum, ', targetnum: ', targetnum);
+  rnum := Brole[bnum].rnum;
+  Bx1 := Brole[bnum].X;
+  By1 := Brole[bnum].Y;
+  //尝试攻击
+  if (Rrole[rnum].PhyPower >= 10) then
+  begin
+    //for every magic, calcualte the max total hurt.
+    //B: the position for moving, A: the positon for attacking
+    curBx1 := -1;
+    curBy1 := -1;
+    curAx1 := -1;
+    curAy1 := -1;
+    curStnum := -1;
+    curMaxHurt := 0;
+    curlevel := 0;
+    p := -1;
+    for i1 := 0 to 9 do
+    begin
+      mnum := Rrole[rnum].Magic[i1];
+      if mnum > 0 then
+      begin
+        level := Rrole[rnum].MagLevel[i1];
+        for j1 := 0 to 4 do
+        begin
+          stnum := RMagic[mnum].Styles[j1];
+          if (stnum > 0) and (level > RStyles[stnum].ReqLevel) then
+          begin
+            if Rrole[rnum].CurrentMP < RStyles[stnum].NeedMP * ((level + 1) div 2) then
+              level := Rrole[rnum].CurrentMP div RStyles[stnum].NeedMP * 2;
+            if level > 10 then
+              level := 10;
+            if level <= 0 then
+              level := 1;
+            Ax1 := Brole[targetnum].X;
+            Ay1 := Brole[targetnum].Y;
+            TryCounterAttack(Ax1, Ay1, tempmaxhurt, bnum, stnum, level);
+            WriteLn('Ax1: ', Ax1, ', Ay1: ', Ay1);
+            WriteLn('stnum: ', stnum, ', hurt: ', tempmaxhurt);
+            if tempmaxhurt > curMaxHurt then
+            begin
+              curBx1 := Bx1;
+              curBy1 := By1;
+              curAx1 := Ax1;
+              curAy1 := Ay1;
+              curStnum := stnum;
+              curlevel := level;
+              curMaxHurt := tempmaxhurt;
+              p := i1;
+            end;
+          end;
+        end;
+      end;
+    end;
+    //if curMaxHurt = 0 then nearestmove(curBx1, curBy1, bnum);
+    //if have selected the postions for moving and attacking, then act
+    if curMaxHurt > 0 then
+    begin
+      Bx := curBx1;
+      By := curBy1;
+      Ax := curAx1;
+      Ay := curAy1;
+      stnum := curStnum;
+      level := curlevel;
+      WriteLn('Bx: ', Bx, ', By: ', By, ', Ax: ', Ax, ', Ay: ', Ay, ', stnum: ', stnum, ', level: ', level);
+      SetAnimationPosition(RStyles[stnum].AttAreaType, RStyles[stnum].MoveDistance[level - 1],
+        RStyles[stnum].AttDistance[level - 1]);
+      WriteLn('bnum: ', bnum, ', rnum: ', Brole[bnum].rnum, ', p: ', p, ', stnum: ', stnum, ', level: ', level);
+      AttackAction(bnum, stnum, level);
+    end;
+  end;
+end;
+
+procedure TryCounterAttack(var Ax1, Ay1, tempmaxhurt: integer; bnum, stnum, level: integer);
+var
+  curX, curY, dis, dis0, temphurt: integer;
+  i, i1, i2: integer;
+  distance, range, AttAreaType, myteam: integer;
   aimHurt: array[0..63, 0..63] of integer;
 begin
-  step := Brole[bnum].Step;
-  Mx1 := -1;
-  My1 := -1;
-  Ax1 := -1;
-  Ay1 := -1;
+  WriteLn('Ax: ', Ax1, ', Ay1: ', Ay1);
   tempmaxhurt := -1;
   FillChar(aimHurt[0, 0], sizeof(aimHurt), -1);
   AttAreaType := RStyles[stnum].AttAreaType;
@@ -4566,74 +4685,121 @@ begin
   AttAreaType := RStyles[stnum].AttAreaType;
   myteam := Brole[bnum].Team;
 
-  for curX := 0 to 63 do
-    for curY := 0 to 63 do
+  curX := Brole[bnum].X;
+  curY := Brole[bnum].Y;
+  WriteLn('curX: ', curX, ', curY: ', curY);
+
+  case AttAreaType of
+    0:
+      dis := distance; //calpoint(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+    1:
+      dis := 1; //calline(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+    2:
+      dis := 0; //calcross(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+    3:
+      dis := distance; //calarea(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
+  end;
+
+  //for i2 := max(curY - dis + dis0, 0) to min(curY + dis - dis0, 63) do
+  //for i1 := max(curX - dis, 0) to min(curX + dis, 63) do
+  i1 := Ax1;
+  i2 := Ay1;
+  WriteLn('i1: ', i1, ', i2: ', i2);
+  dis0 := abs(i1 - curX);
+
+  // if target not within select range
+  if (abs(curX - i1) + abs(curY - i2)) > dis then
+  begin
+    WriteLn('Out of select range.');
+    // line attack
+    if AttAreaType = 1 then
     begin
-      if (Bfield[3, curX, curY] >= 0) and (Bfield[3, curX, curY] <= step) then
+      WriteLn('Line attack');
+      // if on the same x and within range
+      WriteLn('abs(curY - i2): ', abs(curY - i2), ', range: ', distance);
+      WriteLn('abs(curX - i1): ', abs(curX - i1), ', range: ', distance);
+      if (i1 = curX) and (abs(curY - i2) <= distance) then
       begin
-        case AttAreaType of
-          0:
-            dis := distance; //calpoint(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
-          1:
-            dis := 1; //calline(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
-          2:
-            dis := 0; //calcross(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
-          3:
-            dis := distance; //calarea(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
-          {4:
-            caldirdiamond(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
-          5:
-            caldirangle(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);
-          6:
-            calfar(Mx1, My1, Ax1, Ay1, tempmaxhurt, curX, curY, bnum, mnum, level);}
-        end;
+        WriteLn('Line Attack Same X');
+        if abs((curY + 1) - i2) < abs(curY - i2) then
+          i2 := curY + 1
+        else
+          i2 := curY - 1;
+      end
+      // if on the same y and within range
+      else if (i2 = curY) and (abs(curX - i1) <= distance) then
+      begin
+        WriteLn('Line Attack Same Y');
+        if abs((curX + 1) - i1) < abs(curX - i1) then
+          i1 := curX + 1
+        else
+          i1 := curX - 1;
+      end
+      else
+      begin
+        WriteLn('Line Attack: Out of attack range');
+        i1 := -1;
+        i2 := -1;
+      end;
+    end
+    // cross attack
+    else if AttAreaType = 2 then
+    begin
+      WriteLn('Cross attack');
+      if (i1 = curX) or (i2 = curY) then
+      begin
+        WriteLn('Cross Attack Same X or Y');
+        i1 := curX;
+        i2 := curY;
+      end
+      else
+      begin
+        WriteLn('Cross Attack: Out of attack range');
+        i1 := -1;
+        i2 := -1;
+      end;
+    end
+    else
+    begin
+      WriteLn('Others: Out of attack range');
+      i1 := -1;
+      i2 := -1;
+    end;
+  end;
+  WriteLn('i1: ', i1, ', i2: ', i2);
+  if (i1 >= 0) and (i2 >= 0) then
+  begin
+    if AttAreaType <> 3 then
+      SetAminationPosition(curX, curY, i1, i2, AttAreaType, distance, range);
 
-        for i1 := max(curX - dis, 0) to min(curX + dis, 63) do
+    temphurt := 0;
+    if ((AttAreaType = 0) or (AttAreaType = 3)) and (aimHurt[i1, i2] >= 0) then
+    begin
+      if aimHurt[i1, i2] > 0 then
+        temphurt := aimHurt[i1, i2] + random(5) - random(5); //点面类攻击已经计算过的点简单处理
+    end
+    else
+    begin
+      for i := 0 to BRoleAmount - 1 do
+      begin
+        //特别处理面攻击, 因为当面积较大时设置动画位置比较慢
+        if (Brole[i].Team <> myteam) and (Brole[i].Dead = 0) and
+          (((AttAreaType <> 3) and (Bfield[4, Brole[i].X, Brole[i].Y] > 0)) or
+          ((AttAreaType = 3) and (abs(i1 - Brole[i].X) <= range) and (abs(i2 - Brole[i].Y) <= range))) then
         begin
-          dis0 := abs(i1 - curX);
-          for i2 := max(curY - dis + dis0, 0) to min(curY + dis - dis0, 63) do
-          begin
-            if AttAreaType <> 3 then
-              SetAminationPosition(curX, curY, i1, i2, AttAreaType, distance, range);
-
-            temphurt := 0;
-            if ((AttAreaType = 0) or (AttAreaType = 3)) and (aimHurt[i1, i2] >= 0) then
-            begin
-              if aimHurt[i1, i2] > 0 then
-                temphurt := aimHurt[i1, i2] + random(5) - random(5); //点面类攻击已经计算过的点简单处理
-            end
-            else
-            begin
-              for i := 0 to BRoleAmount - 1 do
-              begin
-                //特别处理面攻击, 因为当面积较大时设置动画位置比较慢
-                if (Brole[i].Team <> myteam) and (Brole[i].Dead = 0) and
-                  (((AttAreaType <> 3) and (Bfield[4, Brole[i].X, Brole[i].Y] > 0)) or
-                  ((AttAreaType = 3) and (abs(i1 - Brole[i].X) <= range) and (abs(i2 - Brole[i].Y) <= range))) then
-                begin
-                  temphurt := temphurt + CalHurtValue2(bnum, i, stnum, level);
-                end;
-              end;
-              aimHurt[i1, i2] := temphurt;
-            end;
-            if temphurt > tempmaxhurt then
-            begin
-              tempmaxhurt := temphurt;
-              Mx1 := curX;
-              My1 := curY;
-              Ax1 := i1;
-              Ay1 := i2;
-            end;
-          end;
+          temphurt := temphurt + CalHurtValue2(bnum, i, stnum, level);
         end;
       end;
+      aimHurt[i1, i2] := temphurt;
     end;
-
-  //Bx := tempBx;
-  //By := tempBy;
-  //Ax := tempAx;
-  //Ay := tempAy;
-
+    WriteLn('temphurt: ', temphurt);
+    if temphurt > tempmaxhurt then
+    begin
+      tempmaxhurt := temphurt;
+      Ax1 := i1;
+      Ay1 := i2;
+    end;
+  end;
 end;
 
 end.
